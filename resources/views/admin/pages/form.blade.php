@@ -99,6 +99,7 @@
             const addBlockButton = document.querySelector('[data-add-block]');
             const form = document.getElementById('builder-form');
             const defaultType = Object.keys(definitions)[0] || null;
+            let draggingCard = null;
             let blockCounter = 0;
 
             function makeButton(label, variant = 'secondary') {
@@ -107,6 +108,26 @@
                 button.className = `btn ${variant === 'danger' ? 'btn-danger' : 'btn-secondary'}`;
                 button.textContent = label;
                 return button;
+            }
+
+            function setCollapsed(card, collapsed) {
+                const fieldsWrap = card.querySelector('[data-fields-wrap]');
+                const collapseButton = card.querySelector('[data-collapse-btn]');
+
+                if (!fieldsWrap || !collapseButton) {
+                    return;
+                }
+
+                if (collapsed) {
+                    fieldsWrap.classList.add('hidden');
+                    collapseButton.textContent = 'Espandi';
+                    card.dataset.collapsed = '1';
+                    return;
+                }
+
+                fieldsWrap.classList.remove('hidden');
+                collapseButton.textContent = 'Comprimi';
+                card.dataset.collapsed = '0';
             }
 
             function makeField(field, blockIndex, value) {
@@ -150,6 +171,41 @@
                 });
             }
 
+            function getDragAfterElement(container, clientY) {
+                const cards = [...container.querySelectorAll('[data-builder-block]:not(.is-dragging)')];
+
+                return cards.reduce((closest, card) => {
+                    const box = card.getBoundingClientRect();
+                    const offset = clientY - box.top - box.height / 2;
+
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset, element: card };
+                    }
+
+                    return closest;
+                }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+            }
+
+            function enableDragAndDrop(card, handle) {
+                handle.draggable = true;
+
+                handle.addEventListener('dragstart', (event) => {
+                    draggingCard = card;
+                    card.classList.add('is-dragging', 'opacity-60', 'ring-2', 'ring-slate-300');
+
+                    if (event.dataTransfer) {
+                        event.dataTransfer.effectAllowed = 'move';
+                        event.dataTransfer.setData('text/plain', card.dataset.builderBlock || 'block');
+                    }
+                });
+
+                handle.addEventListener('dragend', () => {
+                    card.classList.remove('is-dragging', 'opacity-60', 'ring-2', 'ring-slate-300');
+                    draggingCard = null;
+                    updateSortOrders();
+                });
+            }
+
             function createBlock(type, data = {}, sortOrder = 0) {
                 if (!defaultType) {
                     return;
@@ -162,6 +218,7 @@
                 const card = document.createElement('section');
                 card.className = 'builder-card space-y-4';
                 card.dataset.builderBlock = '1';
+                card.dataset.collapsed = '0';
 
                 const sortInput = document.createElement('input');
                 sortInput.type = 'hidden';
@@ -175,12 +232,23 @@
                 card.appendChild(header);
 
                 const left = document.createElement('div');
-                left.className = 'field min-w-48';
+                left.className = 'flex flex-wrap items-end gap-2';
+
+                const handle = document.createElement('button');
+                handle.type = 'button';
+                handle.className = 'btn btn-secondary cursor-grab active:cursor-grabbing';
+                handle.textContent = '↕';
+                handle.title = 'Trascina per riordinare';
+                handle.dataset.dragHandle = '1';
+                left.appendChild(handle);
+
+                const blockInfo = document.createElement('div');
+                blockInfo.className = 'field min-w-48';
 
                 const blockLabel = document.createElement('label');
                 blockLabel.className = 'field-label';
                 blockLabel.textContent = 'Tipo blocco';
-                left.appendChild(blockLabel);
+                blockInfo.appendChild(blockLabel);
 
                 const select = document.createElement('select');
                 select.className = 'field-input';
@@ -194,21 +262,22 @@
                 });
 
                 select.value = blockType;
-                left.appendChild(select);
+                blockInfo.appendChild(select);
+                left.appendChild(blockInfo);
                 header.appendChild(left);
 
                 const actions = document.createElement('div');
                 actions.className = 'flex flex-wrap gap-2';
-                const moveUp = makeButton('Su');
-                const moveDown = makeButton('Giu');
+                const collapse = makeButton('Comprimi');
+                collapse.dataset.collapseBtn = '1';
                 const remove = makeButton('Rimuovi', 'danger');
-                actions.appendChild(moveUp);
-                actions.appendChild(moveDown);
+                actions.appendChild(collapse);
                 actions.appendChild(remove);
                 header.appendChild(actions);
 
                 const fieldsWrap = document.createElement('div');
                 fieldsWrap.className = 'grid gap-4 md:grid-cols-2';
+                fieldsWrap.dataset.fieldsWrap = '1';
                 card.appendChild(fieldsWrap);
 
                 function renderFields() {
@@ -241,31 +310,42 @@
                     renderFields();
                 });
 
+                collapse.addEventListener('click', () => {
+                    const isCollapsed = card.dataset.collapsed === '1';
+                    setCollapsed(card, !isCollapsed);
+                });
+
                 remove.addEventListener('click', () => {
                     card.remove();
                     updateSortOrders();
                 });
 
-                moveUp.addEventListener('click', () => {
-                    const previous = card.previousElementSibling;
-                    if (previous) {
-                        blocksContainer.insertBefore(card, previous);
-                        updateSortOrders();
-                    }
-                });
-
-                moveDown.addEventListener('click', () => {
-                    const next = card.nextElementSibling;
-                    if (next) {
-                        blocksContainer.insertBefore(next, card);
-                        updateSortOrders();
-                    }
-                });
-
                 renderFields();
                 blocksContainer.appendChild(card);
+                enableDragAndDrop(card, handle);
+                setCollapsed(card, false);
                 updateSortOrders();
             }
+
+            blocksContainer.addEventListener('dragover', (event) => {
+                if (!draggingCard) {
+                    return;
+                }
+
+                event.preventDefault();
+                const afterElement = getDragAfterElement(blocksContainer, event.clientY);
+
+                if (!afterElement) {
+                    blocksContainer.appendChild(draggingCard);
+                } else {
+                    blocksContainer.insertBefore(draggingCard, afterElement);
+                }
+            });
+
+            blocksContainer.addEventListener('drop', (event) => {
+                event.preventDefault();
+                updateSortOrders();
+            });
 
             addBlockButton.addEventListener('click', () => {
                 createBlock(addTypeSelect.value, {}, blocksContainer.children.length);
