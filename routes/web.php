@@ -20,6 +20,7 @@ Route::prefix('admin')
 
         Route::get('/media', [MediaController::class, 'index'])->name('media.index');
         Route::post('/media', [MediaController::class, 'store'])->name('media.store');
+        Route::post('/media/upload', [MediaController::class, 'upload'])->name('media.upload');
         Route::delete('/media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
     });
 

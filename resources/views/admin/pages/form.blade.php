@@ -98,6 +98,8 @@
             const addTypeSelect = document.querySelector('[data-add-type]');
             const addBlockButton = document.querySelector('[data-add-block]');
             const form = document.getElementById('builder-form');
+            const csrfToken = form.querySelector('input[name="_token"]')?.value || '';
+            const mediaUploadEndpoint = @json(route('admin.media.upload'));
             const defaultType = Object.keys(definitions)[0] || null;
             const collapseOnInitialLoad = @json($page->exists);
             let draggingCard = null;
@@ -168,6 +170,123 @@
                 return input;
             }
 
+            function makeMediaImageField(field, inputName, value) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'field md:col-span-2';
+
+                const label = document.createElement('label');
+                label.className = 'field-label';
+                label.textContent = field.label || 'Immagine';
+                wrapper.appendChild(label);
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.name = inputName;
+                input.className = 'field-input';
+                input.placeholder = 'Incolla URL immagine oppure carica un file';
+                input.value = typeof value === 'string' ? value : '';
+                wrapper.appendChild(input);
+
+                const controls = document.createElement('div');
+                controls.className = 'flex flex-wrap items-center gap-2';
+                wrapper.appendChild(controls);
+
+                const uploadButton = makeButton('Carica');
+                controls.appendChild(uploadButton);
+
+                const clearButton = makeButton('Pulisci');
+                controls.appendChild(clearButton);
+
+                const helper = document.createElement('small');
+                helper.className = 'muted';
+                helper.textContent = 'Upload automatico nel Media Manager';
+                controls.appendChild(helper);
+
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = 'image/*';
+                fileInput.className = 'hidden';
+                controls.appendChild(fileInput);
+
+                const previewWrap = document.createElement('div');
+                previewWrap.className = 'mt-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-100';
+                wrapper.appendChild(previewWrap);
+
+                const previewImage = document.createElement('img');
+                previewImage.className = 'h-40 w-full object-cover';
+                previewImage.alt = 'Anteprima immagine';
+                previewWrap.appendChild(previewImage);
+
+                function updatePreview() {
+                    const url = String(input.value || '').trim();
+                    if (url === '') {
+                        previewWrap.classList.add('hidden');
+                        previewImage.removeAttribute('src');
+                        return;
+                    }
+
+                    previewImage.src = url;
+                    previewWrap.classList.remove('hidden');
+                }
+
+                uploadButton.addEventListener('click', () => {
+                    fileInput.click();
+                });
+
+                clearButton.addEventListener('click', () => {
+                    input.value = '';
+                    updatePreview();
+                });
+
+                input.addEventListener('input', updatePreview);
+
+                fileInput.addEventListener('change', async () => {
+                    const file = fileInput.files?.[0];
+                    if (!file) {
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('_token', csrfToken);
+                    formData.append('file', file);
+
+                    const originalText = uploadButton.textContent;
+                    uploadButton.disabled = true;
+                    uploadButton.textContent = 'Upload...';
+
+                    try {
+                        const response = await fetch(mediaUploadEndpoint, {
+                            method: 'POST',
+                            body: formData,
+                            credentials: 'same-origin',
+                            headers: {
+                                Accept: 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                        });
+
+                        const payload = await response.json();
+                        if (!response.ok || !payload.url) {
+                            throw new Error(payload.message || 'Upload non riuscito');
+                        }
+
+                        input.value = payload.url;
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        fileInput.value = '';
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Errore durante upload immagine';
+                        window.alert(message);
+                    } finally {
+                        uploadButton.disabled = false;
+                        uploadButton.textContent = originalText || 'Carica';
+                    }
+                });
+
+                updatePreview();
+
+                return wrapper;
+            }
+
             function makeField(field, blockIndex, value) {
                 const baseInputName = `blocks[${blockIndex}][data][${field.name}]`;
 
@@ -220,6 +339,14 @@
                                 return;
                             }
 
+                            const rawValue = itemData[subField.name] ?? subField.default ?? '';
+                            const subInputName = `${baseInputName}[${itemIndex}][${subField.name}]`;
+
+                            if (subField.type === 'media_image') {
+                                grid.appendChild(makeMediaImageField(subField, subInputName, rawValue));
+                                return;
+                            }
+
                             const subFieldWrapper = document.createElement('div');
                             subFieldWrapper.className = 'field';
                             grid.appendChild(subFieldWrapper);
@@ -229,8 +356,6 @@
                             subLabel.textContent = subField.label || subField.name || 'Campo';
                             subFieldWrapper.appendChild(subLabel);
 
-                            const rawValue = itemData[subField.name] ?? subField.default ?? '';
-                            const subInputName = `${baseInputName}[${itemIndex}][${subField.name}]`;
                             const subInput = createInputElement(subField, subInputName, rawValue);
                             subFieldWrapper.appendChild(subInput);
 
@@ -262,6 +387,10 @@
                     addItemButton.addEventListener('click', () => addRepeaterItem({}));
 
                     return wrapper;
+                }
+
+                if (field.type === 'media_image') {
+                    return makeMediaImageField(field, baseInputName, value);
                 }
 
                 const wrapper = document.createElement('div');

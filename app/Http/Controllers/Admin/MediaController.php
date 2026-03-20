@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Media;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 class MediaController extends Controller
@@ -65,20 +67,7 @@ class MediaController extends Controller
         $uploadedBy = $request->user()?->id;
 
         foreach ($validated['files'] as $file) {
-            $path = $file->store('media/'.date('Y/m'), 'public');
-            $originalName = $file->getClientOriginalName();
-
-            Media::query()->create([
-                'disk' => 'public',
-                'path' => $path,
-                'file_name' => basename($path),
-                'original_name' => $originalName,
-                'extension' => strtolower((string) $file->getClientOriginalExtension()),
-                'mime_type' => $file->getClientMimeType() ?: ($file->getMimeType() ?: 'application/octet-stream'),
-                'size' => (int) ($file->getSize() ?? 0),
-                'uploaded_by' => $uploadedBy,
-                'title' => pathinfo($originalName, PATHINFO_FILENAME),
-            ]);
+            $this->storeUploadedFile($file, $uploadedBy);
 
             $uploadedCount++;
         }
@@ -88,11 +77,46 @@ class MediaController extends Controller
             ->with('success', $uploadedCount.' file caricati con successo.');
     }
 
+    public function upload(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'image', 'max:20480'],
+        ]);
+
+        $media = $this->storeUploadedFile($validated['file'], $request->user()?->id);
+
+        return response()->json([
+            'id' => $media->id,
+            'url' => $media->url,
+            'name' => $media->original_name,
+            'mime_type' => $media->mime_type,
+            'size' => $media->size,
+        ]);
+    }
+
     public function destroy(Media $media): RedirectResponse
     {
         Storage::disk($media->disk)->delete($media->path);
         $media->delete();
 
         return back()->with('success', 'File eliminato con successo.');
+    }
+
+    private function storeUploadedFile(UploadedFile $file, ?int $uploadedBy): Media
+    {
+        $path = $file->store('media/'.date('Y/m'), 'public');
+        $originalName = $file->getClientOriginalName();
+
+        return Media::query()->create([
+            'disk' => 'public',
+            'path' => $path,
+            'file_name' => basename($path),
+            'original_name' => $originalName,
+            'extension' => strtolower((string) $file->getClientOriginalExtension()),
+            'mime_type' => $file->getClientMimeType() ?: ($file->getMimeType() ?: 'application/octet-stream'),
+            'size' => (int) ($file->getSize() ?? 0),
+            'uploaded_by' => $uploadedBy,
+            'title' => pathinfo($originalName, PATHINFO_FILENAME),
+        ]);
     }
 }

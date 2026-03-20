@@ -177,7 +177,7 @@
                 <div class="mt-6 space-y-1.5">
                     <a
                         href="{{ route('admin.pages.index') }}"
-                        class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[17px] font-medium text-slate-800 transition {{ request()->routeIs('admin.pages.index') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                        class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.pages.index') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
                     >
                         <span class="inline-flex items-center gap-2">
                             <span class="inline-block h-2 w-2 rounded-full bg-slate-400"></span>
@@ -188,7 +188,7 @@
 
                     <a
                         href="{{ route('admin.pages.create') }}"
-                        class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[17px] font-medium text-slate-800 transition {{ request()->routeIs('admin.pages.create') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                        class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.pages.create') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
                     >
                         <span class="inline-flex items-center gap-2">
                             <span class="inline-block h-2 w-2 rounded-full bg-slate-400"></span>
@@ -202,11 +202,11 @@
 
                 <p class="text-sm font-semibold text-slate-400">Pages Status</p>
                 <div class="mt-3 space-y-1.5">
-                    <div class="flex items-center justify-between px-2.5 py-2 text-[17px] text-slate-800">
+                    <div class="flex items-center justify-between px-2.5 py-2 text-[14px] text-slate-800">
                         <span>Published</span>
                         <span class="text-slate-400">{{ $publishedPages }}</span>
                     </div>
-                    <div class="flex items-center justify-between px-2.5 py-2 text-[17px] text-slate-800">
+                    <div class="flex items-center justify-between px-2.5 py-2 text-[14px] text-slate-800">
                         <span>Draft</span>
                         <span class="text-slate-400">{{ $draftPages }}</span>
                     </div>
@@ -218,16 +218,16 @@
                 <div class="mt-3 space-y-1.5">
                     <a
                         href="{{ route('admin.media.index') }}"
-                        class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[17px] font-medium text-slate-800 transition {{ request()->routeIs('admin.media.*') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                        class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.media.*') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
                     >
                         <span>Library</span>
                         <span class="text-slate-400">{{ $totalMedia }}</span>
                     </a>
-                    <div class="flex items-center justify-between px-2.5 py-2 text-[17px] text-slate-800">
+                    <div class="flex items-center justify-between px-2.5 py-2 text-[14px] text-slate-800">
                         <span>Images</span>
                         <span class="text-slate-400">{{ $imageMedia }}</span>
                     </div>
-                    <div class="flex items-center justify-between px-2.5 py-2 text-[17px] text-slate-800">
+                    <div class="flex items-center justify-between px-2.5 py-2 text-[14px] text-slate-800">
                         <span>Documents</span>
                         <span class="text-slate-400">{{ $documentMedia }}</span>
                     </div>
