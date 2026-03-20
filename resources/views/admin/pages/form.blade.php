@@ -99,6 +99,7 @@
             const addBlockButton = document.querySelector('[data-add-block]');
             const form = document.getElementById('builder-form');
             const defaultType = Object.keys(definitions)[0] || null;
+            const collapseOnInitialLoad = @json($page->exists);
             let draggingCard = null;
             let blockCounter = 0;
 
@@ -120,13 +121,17 @@
 
                 if (collapsed) {
                     fieldsWrap.classList.add('hidden');
-                    collapseButton.textContent = 'Espandi';
+                    collapseButton.textContent = '▸';
+                    collapseButton.setAttribute('title', 'Espandi blocco');
+                    collapseButton.setAttribute('aria-label', 'Espandi blocco');
                     card.dataset.collapsed = '1';
                     return;
                 }
 
                 fieldsWrap.classList.remove('hidden');
-                collapseButton.textContent = 'Comprimi';
+                collapseButton.textContent = '▾';
+                collapseButton.setAttribute('title', 'Comprimi blocco');
+                collapseButton.setAttribute('aria-label', 'Comprimi blocco');
                 card.dataset.collapsed = '0';
             }
 
@@ -325,7 +330,7 @@
                 });
             }
 
-            function createBlock(type, data = {}, sortOrder = 0) {
+            function createBlock(type, data = {}, sortOrder = 0, collapsedInitially = false) {
                 if (!defaultType) {
                     return;
                 }
@@ -387,7 +392,10 @@
 
                 const actions = document.createElement('div');
                 actions.className = 'flex flex-wrap gap-2';
-                const collapse = makeButton('Comprimi');
+                const collapse = document.createElement('button');
+                collapse.type = 'button';
+                collapse.className = 'btn btn-secondary w-10 px-0 text-base leading-none';
+                collapse.textContent = '▾';
                 collapse.dataset.collapseBtn = '1';
                 const remove = makeButton('Rimuovi', 'danger');
                 actions.appendChild(collapse);
@@ -442,7 +450,7 @@
                 renderFields();
                 blocksContainer.appendChild(card);
                 enableDragAndDrop(card, handle);
-                setCollapsed(card, false);
+                setCollapsed(card, collapsedInitially);
                 updateSortOrders();
             }
 
@@ -467,15 +475,15 @@
             });
 
             addBlockButton.addEventListener('click', () => {
-                createBlock(addTypeSelect.value, {}, blocksContainer.children.length);
+                createBlock(addTypeSelect.value, {}, blocksContainer.children.length, false);
             });
 
             if (Array.isArray(initialBlocks) && initialBlocks.length > 0) {
                 initialBlocks.forEach((block, index) => {
-                    createBlock(block.type, block.data || {}, block.sort_order ?? index);
+                    createBlock(block.type, block.data || {}, block.sort_order ?? index, collapseOnInitialLoad);
                 });
             } else if (defaultType) {
-                createBlock(defaultType, {}, 0);
+                createBlock(defaultType, {}, 0, false);
             }
 
             form.addEventListener('submit', updateSortOrders);

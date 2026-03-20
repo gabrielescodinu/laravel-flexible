@@ -29,7 +29,7 @@
     @endphp
 
     <main class="h-full w-full">
-        <div class="grid h-full w-full grid-rows-[64px_220px_minmax(0,1fr)] md:grid-rows-1 md:grid-cols-[88px_360px_minmax(0,1fr)]">
+        <div class="grid h-full w-full grid-rows-[64px_190px_minmax(0,1fr)] md:grid-rows-1 md:grid-cols-[72px_300px_minmax(0,1fr)]">
             <aside class="flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 text-white md:hidden">
                 <a
                     href="{{ route('admin.pages.index') }}"
@@ -98,24 +98,24 @@
                 </div>
             </aside>
 
-            <aside class="hidden h-full flex-col items-center border-r border-zinc-800 bg-zinc-950 py-6 text-white md:flex">
+            <aside class="hidden h-full flex-col items-center border-r border-zinc-800 bg-zinc-950 py-4 text-white md:flex">
                 <a
                     href="{{ route('admin.pages.index') }}"
-                    class="mb-8 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-white/10"
+                    class="mb-6 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white/10"
                     aria-label="Admin Home"
                 >
-                    <svg viewBox="0 0 24 24" class="h-6 w-6 fill-current">
+                    <svg viewBox="0 0 24 24" class="h-5 w-5 fill-current">
                         <path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm7 2h9v4h-9v-4Z"/>
                     </svg>
                 </a>
 
-                <nav class="flex flex-1 flex-col items-center gap-3">
+                <nav class="flex flex-1 flex-col items-center gap-2">
                     <a
                         href="{{ route('admin.pages.index') }}"
-                        class="inline-flex h-11 w-11 items-center justify-center rounded-xl transition {{ request()->routeIs('admin.pages.index') ? 'bg-white/20' : 'hover:bg-white/10' }}"
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg transition {{ request()->routeIs('admin.pages.index') ? 'bg-white/20' : 'hover:bg-white/10' }}"
                         aria-label="Tutte le pagine"
                     >
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                             <rect x="3.5" y="5.5" width="17" height="13" rx="2.5"></rect>
                             <path d="M7 10h10M7 14h6"></path>
                         </svg>
@@ -123,20 +123,20 @@
 
                     <a
                         href="{{ route('admin.pages.create') }}"
-                        class="inline-flex h-11 w-11 items-center justify-center rounded-xl transition {{ request()->routeIs('admin.pages.create') ? 'bg-white/20' : 'hover:bg-white/10' }}"
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg transition {{ request()->routeIs('admin.pages.create') ? 'bg-white/20' : 'hover:bg-white/10' }}"
                         aria-label="Nuova pagina"
                     >
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                             <path d="M12 5v14M5 12h14"></path>
                         </svg>
                     </a>
 
                     <a
                         href="{{ route('admin.media.index') }}"
-                        class="inline-flex h-11 w-11 items-center justify-center rounded-xl transition {{ request()->routeIs('admin.media.*') ? 'bg-white/20' : 'hover:bg-white/10' }}"
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg transition {{ request()->routeIs('admin.media.*') ? 'bg-white/20' : 'hover:bg-white/10' }}"
                         aria-label="Media manager"
                     >
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                             <rect x="3.5" y="5.5" width="17" height="13" rx="2.5"></rect>
                             <path d="M8 9.5h8M8 12h8M8 14.5h5"></path>
                         </svg>
@@ -144,10 +144,10 @@
 
                     <a
                         href="{{ route('pages.home') }}"
-                        class="inline-flex h-11 w-11 items-center justify-center rounded-xl transition hover:bg-white/10"
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-white/10"
                         aria-label="Vai al sito"
                     >
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                             <path d="M3 11.5 12 4l9 7.5"></path>
                             <path d="M5.5 10.5V20h13V10.5"></path>
                         </svg>
@@ -158,10 +158,10 @@
                     @csrf
                     <button
                         type="submit"
-                        class="inline-flex h-11 w-11 items-center justify-center rounded-xl transition hover:bg-white/10"
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-white/10"
                         aria-label="Logout"
                     >
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                             <path d="M15 16.5 19.5 12 15 7.5"></path>
                             <path d="M19 12H9"></path>
                             <path d="M10 4.5H6A2.5 2.5 0 0 0 3.5 7v10A2.5 2.5 0 0 0 6 19.5h4"></path>
@@ -170,9 +170,9 @@
                 </form>
             </aside>
 
-            <aside class="hidden h-full overflow-y-auto border-r border-slate-200 bg-slate-100 px-6 py-8 md:block">
+            <aside class="hidden h-full overflow-y-auto border-r border-slate-200 bg-slate-100 px-4 py-6 md:block">
                 <p class="text-sm font-semibold uppercase tracking-[0.14em] text-slate-400">Contenuti</p>
-                <h2 class="mt-2 text-[2rem] font-semibold leading-none text-slate-900">Pagine</h2>
+                <h2 class="mt-2 text-[1.65rem] font-semibold leading-none text-slate-900">Pagine</h2>
 
                 <div class="mt-6 space-y-1.5">
                     <a
@@ -260,7 +260,7 @@
                     </div>
                 @endif
 
-                <div class="p-4 md:p-6">
+                <div class="p-3 md:p-4">
                     @yield('content')
                 </div>
             </section>
