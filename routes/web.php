@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\PageBuilderController;
+use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\PageController;
 use Illuminate\Support\Facades\Route;
@@ -16,6 +17,10 @@ Route::prefix('admin')
         Route::post('/pages', [PageBuilderController::class, 'store'])->name('pages.store');
         Route::get('/pages/{page}/edit', [PageBuilderController::class, 'edit'])->name('pages.edit');
         Route::put('/pages/{page}', [PageBuilderController::class, 'update'])->name('pages.update');
+
+        Route::get('/media', [MediaController::class, 'index'])->name('media.index');
+        Route::post('/media', [MediaController::class, 'store'])->name('media.store');
+        Route::delete('/media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
     });
 
 Route::middleware('guest')->group(function (): void {

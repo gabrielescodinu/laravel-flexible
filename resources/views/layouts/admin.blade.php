@@ -11,11 +11,20 @@
         $totalPages = 0;
         $draftPages = 0;
         $publishedPages = 0;
+        $totalMedia = 0;
+        $imageMedia = 0;
+        $documentMedia = 0;
 
         if (\Illuminate\Support\Facades\Schema::hasTable('pages')) {
             $totalPages = \App\Models\Page::query()->count();
             $draftPages = \App\Models\Page::query()->where('status', 'draft')->count();
             $publishedPages = \App\Models\Page::query()->where('status', 'published')->count();
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('media')) {
+            $totalMedia = \App\Models\Media::query()->count();
+            $imageMedia = \App\Models\Media::query()->where('mime_type', 'like', 'image/%')->count();
+            $documentMedia = \App\Models\Media::query()->where('mime_type', 'not like', 'image/%')->count();
         }
     @endphp
 
@@ -44,6 +53,12 @@
                             <path d="M12 5v14M5 12h14"></path>
                         </svg>
                     </a>
+                    <a href="{{ route('admin.media.index') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/10">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <rect x="3.5" y="5.5" width="17" height="13" rx="2.5"></rect>
+                            <path d="M8 9.5h8M8 12h8M8 14.5h5"></path>
+                        </svg>
+                    </a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/10">
@@ -58,7 +73,7 @@
 
             <aside class="border-b border-slate-200 bg-slate-100 px-4 py-4 md:hidden">
                 <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Pagine</p>
-                <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+                <div class="mt-3 grid grid-cols-3 gap-2 text-sm">
                     <a
                         href="{{ route('admin.pages.index') }}"
                         class="flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.pages.index') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
@@ -72,6 +87,13 @@
                     >
                         <span>Nuova</span>
                         <span class="text-slate-400">+</span>
+                    </a>
+                    <a
+                        href="{{ route('admin.media.index') }}"
+                        class="flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.media.*') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
+                    >
+                        <span>Media</span>
+                        <span class="text-slate-400">{{ $totalMedia }}</span>
                     </a>
                 </div>
             </aside>
@@ -106,6 +128,17 @@
                     >
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                             <path d="M12 5v14M5 12h14"></path>
+                        </svg>
+                    </a>
+
+                    <a
+                        href="{{ route('admin.media.index') }}"
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-xl transition {{ request()->routeIs('admin.media.*') ? 'bg-white/20' : 'hover:bg-white/10' }}"
+                        aria-label="Media manager"
+                    >
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <rect x="3.5" y="5.5" width="17" height="13" rx="2.5"></rect>
+                            <path d="M8 9.5h8M8 12h8M8 14.5h5"></path>
                         </svg>
                     </a>
 
@@ -167,7 +200,7 @@
 
                 <div class="my-6 border-t border-slate-200"></div>
 
-                <p class="text-sm font-semibold text-slate-400">Status</p>
+                <p class="text-sm font-semibold text-slate-400">Pages Status</p>
                 <div class="mt-3 space-y-1.5">
                     <div class="flex items-center justify-between px-2.5 py-2 text-[17px] text-slate-800">
                         <span>Published</span>
@@ -176,6 +209,27 @@
                     <div class="flex items-center justify-between px-2.5 py-2 text-[17px] text-slate-800">
                         <span>Draft</span>
                         <span class="text-slate-400">{{ $draftPages }}</span>
+                    </div>
+                </div>
+
+                <div class="my-6 border-t border-slate-200"></div>
+
+                <p class="text-sm font-semibold text-slate-400">Media</p>
+                <div class="mt-3 space-y-1.5">
+                    <a
+                        href="{{ route('admin.media.index') }}"
+                        class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[17px] font-medium text-slate-800 transition {{ request()->routeIs('admin.media.*') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                    >
+                        <span>Library</span>
+                        <span class="text-slate-400">{{ $totalMedia }}</span>
+                    </a>
+                    <div class="flex items-center justify-between px-2.5 py-2 text-[17px] text-slate-800">
+                        <span>Images</span>
+                        <span class="text-slate-400">{{ $imageMedia }}</span>
+                    </div>
+                    <div class="flex items-center justify-between px-2.5 py-2 text-[17px] text-slate-800">
+                        <span>Documents</span>
+                        <span class="text-slate-400">{{ $documentMedia }}</span>
                     </div>
                 </div>
 
