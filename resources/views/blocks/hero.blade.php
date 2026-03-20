@@ -1,17 +1,59 @@
-<section class="content-block relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 text-white">
-    <div aria-hidden="true" class="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-white/10 blur-2xl"></div>
+@php
+    $layoutDirection = $data['layout_direction'] ?? 'lg:flex-row';
+    $allowedDirections = ['lg:flex-row', 'lg:flex-row-reverse'];
+    if (! in_array($layoutDirection, $allowedDirections, true)) {
+        $layoutDirection = 'lg:flex-row';
+    }
 
-    @if (!empty($data['eyebrow']))
-        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">{{ $data['eyebrow'] }}</p>
-    @endif
+    $title = $data['title'] ?? '';
+    $description = $data['description'] ?? ($data['subtitle'] ?? '');
 
-    <h2 class="mt-3 text-3xl font-bold leading-tight sm:text-4xl">{{ $data['title'] ?? '' }}</h2>
+    $buttonPrimaryText = $data['button_primary_text'] ?? ($data['cta_text'] ?? '');
+    $buttonPrimaryUrl = $data['button_primary_url'] ?? ($data['cta_url'] ?? '');
+    $buttonSecondaryText = $data['button_secondary_text'] ?? '';
+    $buttonSecondaryUrl = $data['button_secondary_url'] ?? '';
 
-    @if (!empty($data['subtitle']))
-        <p class="mt-4 max-w-2xl text-base text-slate-200 sm:text-lg">{{ $data['subtitle'] }}</p>
-    @endif
+    $imageUrl = $data['image_url'] ?? '';
+    $imageAlt = $data['image_alt'] ?? 'Hero image';
+@endphp
 
-    @if (!empty($data['cta_text']) && !empty($data['cta_url']))
-        <a class="btn btn-secondary mt-7 bg-white text-slate-900 hover:bg-slate-100" href="{{ $data['cta_url'] }}">{{ $data['cta_text'] }}</a>
-    @endif
+<section class="bg-ui-surface py-16 text-primary lg:py-24">
+    <div class="mx-auto max-w-screen-xl space-y-12 px-4 py-8 lg:flex lg:gap-16 lg:py-0 {{ $layoutDirection }}">
+        <div class="flex flex-1 flex-col justify-center">
+            @if ($title !== '')
+                <h1 class="mb-4 max-w-2xl text-4xl font-bold leading-none tracking-tight sm:text-5xl">
+                    {{ $title }}
+                </h1>
+            @endif
+
+            @if ($description !== '')
+                <div class="editor-styles-wrapper mb-8 max-w-2xl text-lg text-ui-body">
+                    {!! nl2br(e($description)) !!}
+                </div>
+            @endif
+
+            <div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
+                @if ($buttonPrimaryText !== '' && $buttonPrimaryUrl !== '')
+                    <a href="{{ $buttonPrimaryUrl }}" class="btn btn-primary">
+                        {{ $buttonPrimaryText }}
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                        </svg>
+                    </a>
+                @endif
+
+                @if ($buttonSecondaryText !== '' && $buttonSecondaryUrl !== '')
+                    <a href="{{ $buttonSecondaryUrl }}" class="btn btn-secondary">
+                        {{ $buttonSecondaryText }}
+                    </a>
+                @endif
+            </div>
+        </div>
+
+        @if ($imageUrl !== '')
+            <div class="flex flex-1 items-center justify-center">
+                <img loading="lazy" src="{{ $imageUrl }}" alt="{{ $imageAlt }}" class="h-auto w-full rounded-lg shadow-xl">
+            </div>
+        @endif
+    </div>
 </section>

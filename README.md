@@ -1,58 +1,148 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Laravel Flexible Blocks
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Documentazione rapida per creare nuovi blocchi modulari nel page builder (stile ACF Flexible).
 
-## About Laravel
+## Panoramica
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Il sistema e basato su 3 pezzi:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+1. **Definizione blocco** nel registry.
+2. **Form dinamico admin** che legge la definizione e genera i campi.
+3. **View frontend** che renderizza il blocco nella pagina pubblica.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+File chiave:
 
-## Learning Laravel
+- `app/Support/Flexible/BlockRegistry.php`
+- `resources/views/admin/pages/form.blade.php`
+- `resources/views/blocks/*.blade.php`
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+---
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Tipi campo supportati
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Nel registry puoi usare:
 
-## Agentic Development
+- `text`
+- `textarea`
+- `list` (una riga = un elemento)
+- `repeater` (lista di item con sotto-campi)
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Il salvataggio e la normalizzazione dei dati sono gia gestiti da `sanitize()` e `payloadForForm()` in `BlockRegistry`.
 
-```bash
-composer require laravel/boost --dev
+---
 
-php artisan boost:install
+## Come creare un nuovo blocco (step by step)
+
+### 1) Registra il blocco nel `BlockRegistry`
+
+Apri `app/Support/Flexible/BlockRegistry.php` e aggiungi una nuova entry nell'array `$blocks`.
+
+Esempio minimale:
+
+```php
+'my_custom_block' => [
+    'label' => 'My Custom Block',
+    'view' => 'blocks.my_custom_block',
+    'fields' => [
+        ['name' => 'title', 'label' => 'Titolo', 'type' => 'text', 'default' => 'Titolo di esempio'],
+        ['name' => 'description', 'label' => 'Descrizione', 'type' => 'textarea', 'default' => 'Testo descrittivo'],
+    ],
+],
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Note:
 
-## Contributing
+- `label`: nome visibile nel selettore blocchi in admin.
+- `view`: path Blade senza `.blade.php`.
+- `fields`: schema campi usato dal builder.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+### 2) Crea la view frontend del blocco
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Crea il file:
 
-## Security Vulnerabilities
+- `resources/views/blocks/my_custom_block.blade.php`
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Esempio:
 
-## License
+```blade
+<section class="content-block">
+    <h3 class="text-2xl font-semibold text-slate-900">{{ $data['title'] ?? '' }}</h3>
+    <p class="mt-3 text-slate-600">{{ $data['description'] ?? '' }}</p>
+</section>
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+`$data` contiene i campi salvati del blocco.
+
+---
+
+### 3) Usa il blocco nel builder
+
+Non devi aggiungere route/controller extra.
+
+Appena il blocco e nel registry:
+
+1. Apri admin (`/admin/pages/...`).
+2. Seleziona il nuovo tipo blocco dal dropdown.
+3. Compila campi e salva pagina.
+
+---
+
+## Come creare un blocco con repeater
+
+Esempio struttura repeater nel registry:
+
+```php
+'fields' => [
+    [
+        'name' => 'cards',
+        'label' => 'Card',
+        'type' => 'repeater',
+        'fields' => [
+            ['name' => 'title', 'label' => 'Titolo', 'type' => 'text'],
+            ['name' => 'text', 'label' => 'Testo', 'type' => 'textarea'],
+            ['name' => 'image_url', 'label' => 'Immagine', 'type' => 'text'],
+        ],
+        'default' => [
+            ['title' => 'Card 1', 'text' => 'Descrizione', 'image_url' => 'https://...'],
+        ],
+    ],
+],
+```
+
+Nel Blade:
+
+```blade
+@php($cards = is_array($data['cards'] ?? null) ? $data['cards'] : [])
+
+<div class="grid gap-4 md:grid-cols-3">
+    @foreach ($cards as $card)
+        <article class="rounded-xl border border-slate-200 bg-white p-4">
+            <h4>{{ $card['title'] ?? '' }}</h4>
+            <p>{{ $card['text'] ?? '' }}</p>
+        </article>
+    @endforeach
+</div>
+```
+
+---
+
+## Checklist veloce prima del commit
+
+1. Hai aggiunto il blocco in `BlockRegistry`?
+2. La `view` punta a un file Blade esistente?
+3. I nomi campo (`name`) usati nel Blade sono corretti?
+4. Hai salvato e verificato da `/admin/pages/...`?
+5. Hai controllato rendering su mobile e desktop?
+
+---
+
+## Comandi utili
+
+```bash
+php artisan view:cache
+php artisan test
+```
+
+Se vuoi, posso anche creare un **template generatore** (stub) per aggiungere nuovi blocchi in 30 secondi.

@@ -130,7 +130,135 @@
                 card.dataset.collapsed = '0';
             }
 
+            function normalizeRepeaterItems(value) {
+                if (Array.isArray(value)) {
+                    return value.filter((item) => item && typeof item === 'object');
+                }
+
+                if (value && typeof value === 'object') {
+                    return Object.values(value).filter((item) => item && typeof item === 'object');
+                }
+
+                return [];
+            }
+
+            function createInputElement(field, inputName, value) {
+                const isLongText = field.type === 'textarea' || field.type === 'list';
+                const input = document.createElement(isLongText ? 'textarea' : 'input');
+                input.className = 'field-input';
+                input.name = inputName;
+
+                if (!isLongText) {
+                    input.type = 'text';
+                }
+
+                if (Array.isArray(value)) {
+                    input.value = value.join('\n');
+                } else if (value === null || value === undefined) {
+                    input.value = '';
+                } else {
+                    input.value = String(value);
+                }
+
+                return input;
+            }
+
             function makeField(field, blockIndex, value) {
+                const baseInputName = `blocks[${blockIndex}][data][${field.name}]`;
+
+                if (field.type === 'repeater') {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'field md:col-span-2';
+
+                    const label = document.createElement('label');
+                    label.className = 'field-label';
+                    label.textContent = field.label;
+                    wrapper.appendChild(label);
+
+                    const itemsContainer = document.createElement('div');
+                    itemsContainer.className = 'space-y-3';
+                    wrapper.appendChild(itemsContainer);
+
+                    const addItemButton = makeButton('Aggiungi card');
+                    wrapper.appendChild(addItemButton);
+
+                    const subFields = Array.isArray(field.fields) ? field.fields : [];
+                    const providedItems = normalizeRepeaterItems(value);
+                    const defaultItems = normalizeRepeaterItems(field.default ?? []);
+                    const initialItems = providedItems.length > 0 ? providedItems : defaultItems;
+                    let repeaterIndex = 0;
+
+                    function addRepeaterItem(itemData = {}) {
+                        const itemIndex = repeaterIndex++;
+                        const itemCard = document.createElement('div');
+                        itemCard.className = 'rounded-xl border border-slate-200 bg-white p-4 space-y-3';
+                        itemsContainer.appendChild(itemCard);
+
+                        const itemHeader = document.createElement('div');
+                        itemHeader.className = 'flex items-center justify-between gap-2';
+                        itemCard.appendChild(itemHeader);
+
+                        const itemTitle = document.createElement('p');
+                        itemTitle.className = 'text-sm font-semibold text-slate-700';
+                        itemTitle.textContent = `Card ${itemsContainer.children.length}`;
+                        itemHeader.appendChild(itemTitle);
+
+                        const removeItemButton = makeButton('Rimuovi', 'danger');
+                        itemHeader.appendChild(removeItemButton);
+
+                        const grid = document.createElement('div');
+                        grid.className = 'grid gap-3 md:grid-cols-2';
+                        itemCard.appendChild(grid);
+
+                        subFields.forEach((subField) => {
+                            if (!subField || typeof subField !== 'object') {
+                                return;
+                            }
+
+                            const subFieldWrapper = document.createElement('div');
+                            subFieldWrapper.className = 'field';
+                            grid.appendChild(subFieldWrapper);
+
+                            const subLabel = document.createElement('label');
+                            subLabel.className = 'field-label';
+                            subLabel.textContent = subField.label || subField.name || 'Campo';
+                            subFieldWrapper.appendChild(subLabel);
+
+                            const rawValue = itemData[subField.name] ?? subField.default ?? '';
+                            const subInputName = `${baseInputName}[${itemIndex}][${subField.name}]`;
+                            const subInput = createInputElement(subField, subInputName, rawValue);
+                            subFieldWrapper.appendChild(subInput);
+
+                            if (subField.type === 'list') {
+                                const hint = document.createElement('small');
+                                hint.className = 'muted';
+                                hint.textContent = 'Inserisci un elemento per riga.';
+                                subFieldWrapper.appendChild(hint);
+                            }
+                        });
+
+                        removeItemButton.addEventListener('click', () => {
+                            itemCard.remove();
+                            [...itemsContainer.children].forEach((child, idx) => {
+                                const titleNode = child.querySelector('p');
+                                if (titleNode) {
+                                    titleNode.textContent = `Card ${idx + 1}`;
+                                }
+                            });
+                        });
+                    }
+
+                    if (initialItems.length > 0) {
+                        initialItems.forEach((item) => addRepeaterItem(item));
+                    } else {
+                        addRepeaterItem({});
+                    }
+
+                    addItemButton.addEventListener('click', () => addRepeaterItem({}));
+
+                    return wrapper;
+                }
+
                 const wrapper = document.createElement('div');
                 wrapper.className = 'field';
 
@@ -139,16 +267,7 @@
                 label.textContent = field.label;
                 wrapper.appendChild(label);
 
-                const isLongText = field.type === 'textarea' || field.type === 'list';
-                const input = document.createElement(isLongText ? 'textarea' : 'input');
-                input.className = 'field-input';
-
-                if (!isLongText) {
-                    input.type = 'text';
-                }
-
-                input.name = `blocks[${blockIndex}][data][${field.name}]`;
-                input.value = typeof value === 'string' ? value : '';
+                const input = createInputElement(field, baseInputName, value);
                 wrapper.appendChild(input);
 
                 if (field.type === 'list') {
