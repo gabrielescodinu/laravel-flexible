@@ -1,0 +1,285 @@
+@extends('layouts.admin')
+
+@section('title', $page->exists ? 'Modifica pagina' : 'Nuova pagina')
+
+@section('content')
+    <section class="panel">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Editor</p>
+                <h1 class="mt-1 text-2xl font-bold text-slate-900">{{ $page->exists ? 'Modifica pagina' : 'Nuova pagina' }}</h1>
+                <p class="muted mt-2">Configura i campi base e componi il layout con blocchi flessibili.</p>
+            </div>
+            <a class="btn btn-secondary" href="{{ route('admin.pages.index') }}">Torna alla lista</a>
+        </div>
+    </section>
+
+    <form id="builder-form" class="space-y-4" method="POST" action="{{ $formAction }}">
+        @csrf
+        @if ($formMethod !== 'POST')
+            @method($formMethod)
+        @endif
+
+        <section class="panel space-y-4">
+            <div class="grid gap-4 md:grid-cols-2">
+                <div class="field">
+                    <label class="field-label" for="title">Titolo</label>
+                    <input class="field-input" id="title" name="title" type="text" value="{{ old('title', $page->title) }}" required>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="slug">Slug</label>
+                    <input class="field-input" id="slug" name="slug" type="text" value="{{ old('slug', $page->slug) }}" placeholder="home" required>
+                </div>
+            </div>
+
+            <div class="field max-w-52">
+                <label class="field-label" for="status">Stato</label>
+                <select class="field-input" id="status" name="status" required>
+                    @php($currentStatus = old('status', $page->status ?: 'draft'))
+                    <option value="draft" @selected($currentStatus === 'draft')>draft</option>
+                    <option value="published" @selected($currentStatus === 'published')>published</option>
+                </select>
+            </div>
+        </section>
+
+        <section class="panel space-y-4">
+            <div class="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-semibold text-slate-900">Flexible Blocks</h2>
+                    <p class="muted mt-1">Aggiungi, rimuovi e riordina i blocchi per costruire la pagina.</p>
+                </div>
+                <div class="flex flex-wrap items-end gap-2">
+                    <div class="field min-w-48">
+                        <label class="field-label" for="block-type">Tipo blocco</label>
+                        <select class="field-input" id="block-type" data-add-type>
+                            @foreach ($blockDefinitions as $type => $definition)
+                                <option value="{{ $type }}">{{ $definition['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-primary" data-add-block>Aggiungi blocco</button>
+                </div>
+            </div>
+
+            <div class="space-y-3" data-blocks></div>
+        </section>
+
+        <div class="flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-primary">{{ $submitLabel }}</button>
+            @if ($page->exists && $page->status === 'published')
+                <a class="btn btn-secondary" href="{{ $page->slug === 'home' ? route('pages.home') : route('pages.show', $page->slug) }}">Vedi pagina</a>
+            @endif
+        </div>
+    </form>
+
+    <script>
+        (() => {
+            const definitions = @json($blockDefinitions);
+            const oldBlocks = @json(old('blocks'));
+            const fallbackBlocks = @json($builderBlocks);
+
+            function normalizeBlocks(value) {
+                if (Array.isArray(value)) {
+                    return value;
+                }
+
+                if (value && typeof value === 'object') {
+                    return Object.values(value);
+                }
+
+                return [];
+            }
+
+            const initialBlocks = normalizeBlocks(oldBlocks).length > 0
+                ? normalizeBlocks(oldBlocks)
+                : normalizeBlocks(fallbackBlocks);
+
+            const blocksContainer = document.querySelector('[data-blocks]');
+            const addTypeSelect = document.querySelector('[data-add-type]');
+            const addBlockButton = document.querySelector('[data-add-block]');
+            const form = document.getElementById('builder-form');
+            const defaultType = Object.keys(definitions)[0] || null;
+            let blockCounter = 0;
+
+            function makeButton(label, variant = 'secondary') {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `btn ${variant === 'danger' ? 'btn-danger' : 'btn-secondary'}`;
+                button.textContent = label;
+                return button;
+            }
+
+            function makeField(field, blockIndex, value) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'field';
+
+                const label = document.createElement('label');
+                label.className = 'field-label';
+                label.textContent = field.label;
+                wrapper.appendChild(label);
+
+                const isLongText = field.type === 'textarea' || field.type === 'list';
+                const input = document.createElement(isLongText ? 'textarea' : 'input');
+                input.className = 'field-input';
+
+                if (!isLongText) {
+                    input.type = 'text';
+                }
+
+                input.name = `blocks[${blockIndex}][data][${field.name}]`;
+                input.value = typeof value === 'string' ? value : '';
+                wrapper.appendChild(input);
+
+                if (field.type === 'list') {
+                    const hint = document.createElement('small');
+                    hint.className = 'muted';
+                    hint.textContent = 'Inserisci un elemento per riga.';
+                    wrapper.appendChild(hint);
+                }
+
+                return wrapper;
+            }
+
+            function updateSortOrders() {
+                const cards = blocksContainer.querySelectorAll('[data-builder-block]');
+                cards.forEach((card, index) => {
+                    const sortInput = card.querySelector('[data-sort-input]');
+                    if (sortInput) {
+                        sortInput.value = String(index);
+                    }
+                });
+            }
+
+            function createBlock(type, data = {}, sortOrder = 0) {
+                if (!defaultType) {
+                    return;
+                }
+
+                const blockIndex = blockCounter++;
+                const blockType = definitions[type] ? type : defaultType;
+                const blockData = (data && typeof data === 'object') ? data : {};
+
+                const card = document.createElement('section');
+                card.className = 'builder-card space-y-4';
+                card.dataset.builderBlock = '1';
+
+                const sortInput = document.createElement('input');
+                sortInput.type = 'hidden';
+                sortInput.name = `blocks[${blockIndex}][sort_order]`;
+                sortInput.value = String(sortOrder);
+                sortInput.dataset.sortInput = '1';
+                card.appendChild(sortInput);
+
+                const header = document.createElement('div');
+                header.className = 'flex flex-wrap items-end justify-between gap-3';
+                card.appendChild(header);
+
+                const left = document.createElement('div');
+                left.className = 'field min-w-48';
+
+                const blockLabel = document.createElement('label');
+                blockLabel.className = 'field-label';
+                blockLabel.textContent = 'Tipo blocco';
+                left.appendChild(blockLabel);
+
+                const select = document.createElement('select');
+                select.className = 'field-input';
+                select.name = `blocks[${blockIndex}][type]`;
+
+                Object.entries(definitions).forEach(([blockKey, definition]) => {
+                    const option = document.createElement('option');
+                    option.value = blockKey;
+                    option.textContent = definition.label;
+                    select.appendChild(option);
+                });
+
+                select.value = blockType;
+                left.appendChild(select);
+                header.appendChild(left);
+
+                const actions = document.createElement('div');
+                actions.className = 'flex flex-wrap gap-2';
+                const moveUp = makeButton('Su');
+                const moveDown = makeButton('Giu');
+                const remove = makeButton('Rimuovi', 'danger');
+                actions.appendChild(moveUp);
+                actions.appendChild(moveDown);
+                actions.appendChild(remove);
+                header.appendChild(actions);
+
+                const fieldsWrap = document.createElement('div');
+                fieldsWrap.className = 'grid gap-4 md:grid-cols-2';
+                card.appendChild(fieldsWrap);
+
+                function renderFields() {
+                    fieldsWrap.innerHTML = '';
+                    const currentDefinition = definitions[select.value];
+
+                    if (!currentDefinition || !Array.isArray(currentDefinition.fields)) {
+                        return;
+                    }
+
+                    currentDefinition.fields.forEach((field) => {
+                        let rawValue = blockData[field.name];
+
+                        if (rawValue === undefined || rawValue === null) {
+                            rawValue = field.default ?? '';
+                        }
+
+                        if (Array.isArray(rawValue)) {
+                            rawValue = rawValue.join('\n');
+                        } else {
+                            rawValue = String(rawValue);
+                        }
+
+                        fieldsWrap.appendChild(makeField(field, blockIndex, rawValue));
+                    });
+                }
+
+                select.addEventListener('change', () => {
+                    Object.keys(blockData).forEach((key) => delete blockData[key]);
+                    renderFields();
+                });
+
+                remove.addEventListener('click', () => {
+                    card.remove();
+                    updateSortOrders();
+                });
+
+                moveUp.addEventListener('click', () => {
+                    const previous = card.previousElementSibling;
+                    if (previous) {
+                        blocksContainer.insertBefore(card, previous);
+                        updateSortOrders();
+                    }
+                });
+
+                moveDown.addEventListener('click', () => {
+                    const next = card.nextElementSibling;
+                    if (next) {
+                        blocksContainer.insertBefore(next, card);
+                        updateSortOrders();
+                    }
+                });
+
+                renderFields();
+                blocksContainer.appendChild(card);
+                updateSortOrders();
+            }
+
+            addBlockButton.addEventListener('click', () => {
+                createBlock(addTypeSelect.value, {}, blocksContainer.children.length);
+            });
+
+            if (Array.isArray(initialBlocks) && initialBlocks.length > 0) {
+                initialBlocks.forEach((block, index) => {
+                    createBlock(block.type, block.data || {}, block.sort_order ?? index);
+                });
+            } else if (defaultType) {
+                createBlock(defaultType, {}, 0);
+            }
+
+            form.addEventListener('submit', updateSortOrders);
+        })();
+    </script>
+@endsection
