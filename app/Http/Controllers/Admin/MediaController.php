@@ -94,6 +94,42 @@ class MediaController extends Controller
         ]);
     }
 
+    public function library(Request $request): JsonResponse
+    {
+        $search = trim((string) $request->query('search', ''));
+
+        $query = Media::query()
+            ->where('mime_type', 'like', 'image/%')
+            ->latest();
+
+        if ($search !== '') {
+            $query->where(function ($builder) use ($search): void {
+                $builder
+                    ->where('original_name', 'like', '%'.$search.'%')
+                    ->orWhere('title', 'like', '%'.$search.'%')
+                    ->orWhere('mime_type', 'like', '%'.$search.'%');
+            });
+        }
+
+        $items = $query
+            ->limit(60)
+            ->get()
+            ->map(static fn (Media $media): array => [
+                'id' => $media->id,
+                'url' => $media->url,
+                'name' => $media->original_name,
+                'mime_type' => $media->mime_type,
+                'size' => $media->size,
+                'human_size' => $media->human_size,
+            ])
+            ->values()
+            ->all();
+
+        return response()->json([
+            'data' => $items,
+        ]);
+    }
+
     public function destroy(Media $media): RedirectResponse
     {
         Storage::disk($media->disk)->delete($media->path);
