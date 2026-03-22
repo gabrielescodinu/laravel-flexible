@@ -10,50 +10,74 @@
                 <h1 class="mt-1 text-2xl font-bold text-slate-900">{{ $page->exists ? 'Modifica pagina' : 'Nuova pagina' }}</h1>
                 <p class="muted mt-2">Configura i campi base e componi il layout con blocchi flessibili.</p>
             </div>
-            <a class="btn btn-secondary" href="{{ route('admin.pages.index') }}">Torna alla lista</a>
+            <div class="flex flex-wrap items-center gap-2">
+                @if ($page->exists)
+                    <button type="button" class="btn btn-secondary" data-open-revisions>
+                        Revisioni ({{ $revisions->count() }})
+                    </button>
+                @endif
+                <a class="btn btn-secondary" href="{{ route('admin.pages.index') }}">Torna alla lista</a>
+            </div>
         </div>
     </section>
 
     @if ($page->exists)
-        <section class="panel space-y-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                    <h2 class="text-lg font-semibold text-slate-900">Revisioni</h2>
-                    <p class="muted mt-1 text-xs">Snapshot automatici ad ogni salvataggio. Puoi ripristinare una versione precedente.</p>
+        <div
+            class="fixed inset-0 z-[80] hidden items-center justify-center bg-black/45 p-4"
+            data-revisions-modal
+            aria-hidden="true"
+        >
+            <div class="w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">Revisioni</h2>
+                        <p class="muted mt-1 text-xs">Snapshot automatici ad ogni salvataggio. Puoi ripristinare una versione precedente.</p>
+                    </div>
+                    <button type="button" class="btn btn-secondary" data-close-revisions>Chiudi</button>
                 </div>
-                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
-                    {{ $revisions->count() }} recenti
-                </span>
-            </div>
 
-            @if ($revisions->isEmpty())
-                <p class="muted text-sm">Nessuna revisione disponibile.</p>
-            @else
-                <div class="space-y-2">
-                    @foreach ($revisions as $revision)
-                        <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
-                            <div class="min-w-0">
-                                <p class="truncate text-sm font-semibold text-slate-900">
-                                    {{ $revision->label ?: 'Snapshot automatico' }}
-                                </p>
-                                <p class="truncate text-xs text-slate-500">
-                                    #{{ $revision->id }} · {{ $revision->created_at?->format('d/m/Y H:i') }} · {{ $revision->user?->name ?: 'Sistema' }}
-                                </p>
-                            </div>
-
-                            <form
-                                method="POST"
-                                action="{{ route('admin.pages.revisions.restore', [$page, $revision]) }}"
-                                onsubmit="return confirm('Ripristinare questa revisione? Le modifiche correnti verranno sovrascritte.')"
-                            >
-                                @csrf
-                                <button type="submit" class="btn btn-secondary">Ripristina</button>
-                            </form>
+                <div class="max-h-[70vh] overflow-y-auto p-4">
+                    @if ($revisions->isEmpty())
+                        <p class="muted text-sm">Nessuna revisione disponibile.</p>
+                    @else
+                        <div class="mb-3">
+                            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                                {{ $revisions->count() }} recenti
+                            </span>
                         </div>
-                    @endforeach
+                        <div class="space-y-2">
+                            @foreach ($revisions as $revision)
+                                <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-semibold text-slate-900">
+                                            {{ $revision->label ?: 'Snapshot automatico' }}
+                                        </p>
+                                        <p class="truncate text-xs text-slate-500">
+                                            #{{ $revision->id }} · {{ $revision->created_at?->format('d/m/Y H:i') }} · {{ $revision->user?->name ?: 'Sistema' }}
+                                        </p>
+                                    </div>
+
+                                    <form
+                                        method="POST"
+                                        action="{{ route('admin.pages.revisions.restore', [$page, $revision]) }}"
+                                        onsubmit="return confirm('Ripristinare questa revisione? Le modifiche correnti verranno sovrascritte.')"
+                                    >
+                                        @csrf
+                                        <button type="submit" class="btn btn-secondary">Ripristina</button>
+                                    </form>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
-            @endif
-        </section>
+
+                <div class="border-t border-slate-200 px-4 py-3">
+                    <div class="flex justify-end">
+                        <button type="button" class="btn btn-secondary" data-close-revisions>Chiudi</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     @endif
 
     <form id="builder-form" class="space-y-4" method="POST" action="{{ $formAction }}">
@@ -113,6 +137,47 @@
             @endif
         </div>
     </form>
+
+    <script>
+        (() => {
+            const revisionsModal = document.querySelector('[data-revisions-modal]');
+            const openRevisionsButton = document.querySelector('[data-open-revisions]');
+            const closeRevisionsButtons = [...document.querySelectorAll('[data-close-revisions]')];
+
+            if (revisionsModal && openRevisionsButton) {
+                const openRevisionsModal = () => {
+                    revisionsModal.classList.remove('hidden');
+                    revisionsModal.classList.add('flex');
+                    revisionsModal.setAttribute('aria-hidden', 'false');
+                };
+
+                const closeRevisionsModal = () => {
+                    revisionsModal.classList.add('hidden');
+                    revisionsModal.classList.remove('flex');
+                    revisionsModal.setAttribute('aria-hidden', 'true');
+                };
+
+                const onRevisionsEscape = (event) => {
+                    if (event.key === 'Escape' && revisionsModal.getAttribute('aria-hidden') === 'false') {
+                        closeRevisionsModal();
+                    }
+                };
+
+                openRevisionsButton.addEventListener('click', openRevisionsModal);
+                closeRevisionsButtons.forEach((button) => {
+                    button.addEventListener('click', closeRevisionsModal);
+                });
+
+                revisionsModal.addEventListener('click', (event) => {
+                    if (event.target === revisionsModal) {
+                        closeRevisionsModal();
+                    }
+                });
+
+                document.addEventListener('keydown', onRevisionsEscape);
+            }
+        })();
+    </script>
 
     <script>
         (() => {
