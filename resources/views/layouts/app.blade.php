@@ -23,19 +23,36 @@
     @endphp
 
     @auth
-        <div class="border-b border-slate-700 bg-slate-900 text-slate-200">
-            <div class="mx-auto flex w-full max-w-screen-xl flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs md:px-8">
-                <span class="font-semibold uppercase tracking-[0.12em] text-slate-400">Admin</span>
+        @php
+            $editLink = null;
+            $editLabel = null;
 
-                <div class="flex flex-wrap items-center gap-1.5">
-                    <a href="{{ route('admin.pages.index') }}" class="rounded-md px-2.5 py-1 hover:bg-slate-800">Pannello</a>
-                    <a href="{{ route('admin.menus.edit') }}" class="rounded-md px-2.5 py-1 hover:bg-slate-800">Menu visitatori</a>
-                    <a href="{{ route('admin.media.index') }}" class="rounded-md px-2.5 py-1 hover:bg-slate-800">Media</a>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="rounded-md px-2.5 py-1 hover:bg-slate-800">Logout</button>
-                    </form>
-                </div>
+            if (isset($page) && $page instanceof \App\Models\Page) {
+                $editLink = route('admin.pages.edit', $page);
+                $editLabel = 'Modifica pagina';
+            } elseif (isset($post) && $post instanceof \App\Models\Post) {
+                $editLink = route('admin.articles.edit', $post);
+                $editLabel = 'Modifica articolo';
+            }
+        @endphp
+
+        <div class="border-b border-slate-700 bg-slate-900 text-slate-200">
+            <div class="mx-auto flex w-full max-w-screen-xl flex-wrap items-center justify-end gap-2 px-4 py-2 text-xs md:px-8">
+                <a href="{{ route('admin.pages.index') }}" class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium hover:bg-slate-800">
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h14M10 3l7 7-7 7"></path>
+                    </svg>
+                    Dashboard admin
+                </a>
+
+                @if ($editLink && $editLabel)
+                    <a href="{{ $editLink }}" class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium text-emerald-200 hover:bg-slate-800">
+                        <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.7 3.3 2 2a1 1 0 0 1 0 1.4l-8.9 8.9-3.8.9.9-3.8 8.9-8.9a1 1 0 0 1 1.4 0Z"></path>
+                        </svg>
+                        {{ $editLabel }}
+                    </a>
+                @endif
             </div>
         </div>
     @endauth
