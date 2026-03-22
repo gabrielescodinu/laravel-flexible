@@ -23,6 +23,9 @@ class AuthFlowTest extends TestCase
 
         $this->get(route('admin.menus.edit'))
             ->assertRedirect(route('login'));
+
+        $this->get(route('profile.edit'))
+            ->assertRedirect(route('login'));
     }
 
     public function test_user_can_login_and_logout(): void

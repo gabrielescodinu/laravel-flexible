@@ -37,22 +37,53 @@
         @endphp
 
         <div class="border-b border-slate-700 bg-slate-900 text-slate-200">
-            <div class="mx-auto flex w-full max-w-screen-xl flex-wrap items-center justify-end gap-2 px-4 py-2 text-xs md:px-8">
-                <a href="{{ route('admin.pages.index') }}" class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium hover:bg-slate-800">
-                    <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h14M10 3l7 7-7 7"></path>
-                    </svg>
-                    Dashboard admin
-                </a>
-
-                @if ($editLink && $editLabel)
-                    <a href="{{ $editLink }}" class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium text-emerald-200 hover:bg-slate-800">
+            <div class="mx-auto flex w-full max-w-screen-xl flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs md:px-8">
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <a href="{{ route('admin.pages.index') }}" class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium hover:bg-slate-800">
                         <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.7 3.3 2 2a1 1 0 0 1 0 1.4l-8.9 8.9-3.8.9.9-3.8 8.9-8.9a1 1 0 0 1 1.4 0Z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h14M10 3l7 7-7 7"></path>
                         </svg>
-                        {{ $editLabel }}
+                        Dashboard admin
                     </a>
-                @endif
+
+                    @if ($editLink && $editLabel)
+                        <a href="{{ $editLink }}" class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium text-emerald-200 hover:bg-slate-800">
+                            <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m14.7 3.3 2 2a1 1 0 0 1 0 1.4l-8.9 8.9-3.8.9.9-3.8 8.9-8.9a1 1 0 0 1 1.4 0Z"></path>
+                            </svg>
+                            {{ $editLabel }}
+                        </a>
+                    @endif
+                </div>
+
+                <div class="relative" data-user-dropdown>
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium hover:bg-slate-800"
+                        data-user-dropdown-toggle
+                        aria-expanded="false"
+                    >
+                        <span>{{ auth()->user()?->name }}</span>
+                        <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m6 8 4 4 4-4"></path>
+                        </svg>
+                    </button>
+
+                    <div
+                        class="absolute right-0 z-30 mt-2 hidden min-w-44 overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-xl"
+                        data-user-dropdown-menu
+                    >
+                        <a href="{{ route('profile.edit') }}" class="block px-3 py-2.5 text-sm text-slate-200 transition hover:bg-slate-800">
+                            Modifica profilo
+                        </a>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="block w-full px-3 py-2.5 text-left text-sm text-rose-200 transition hover:bg-slate-800">
+                                Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     @endauth
@@ -182,6 +213,9 @@
             const searchPanel = document.getElementById('search-panel');
             const searchOpenButtons = [...document.querySelectorAll('[data-open-search]')];
             const searchCloseButtons = [...document.querySelectorAll('[data-close-search]')];
+            const userDropdown = document.querySelector('[data-user-dropdown]');
+            const userDropdownToggle = userDropdown?.querySelector('[data-user-dropdown-toggle]');
+            const userDropdownMenu = userDropdown?.querySelector('[data-user-dropdown-menu]');
 
             const closeMobileMenu = () => {
                 if (!mobileMenu || !mobileToggle) {
@@ -243,6 +277,43 @@
                 button.addEventListener('click', closeSearch);
             });
 
+            const closeUserDropdown = () => {
+                if (!userDropdownToggle || !userDropdownMenu) {
+                    return;
+                }
+
+                userDropdownMenu.classList.add('hidden');
+                userDropdownToggle.setAttribute('aria-expanded', 'false');
+            };
+
+            const openUserDropdown = () => {
+                if (!userDropdownToggle || !userDropdownMenu) {
+                    return;
+                }
+
+                userDropdownMenu.classList.remove('hidden');
+                userDropdownToggle.setAttribute('aria-expanded', 'true');
+            };
+
+            if (userDropdownToggle && userDropdownMenu) {
+                userDropdownToggle.addEventListener('click', () => {
+                    const expanded = userDropdownToggle.getAttribute('aria-expanded') === 'true';
+
+                    if (expanded) {
+                        closeUserDropdown();
+                        return;
+                    }
+
+                    openUserDropdown();
+                });
+
+                document.addEventListener('click', (event) => {
+                    if (!userDropdown.contains(event.target)) {
+                        closeUserDropdown();
+                    }
+                });
+            }
+
             if (searchPanel) {
                 searchPanel.addEventListener('click', (event) => {
                     if (event.target === searchPanel) {
@@ -255,6 +326,7 @@
                 if (event.key === 'Escape') {
                     closeMobileMenu();
                     closeSearch();
+                    closeUserDropdown();
                 }
             });
 
