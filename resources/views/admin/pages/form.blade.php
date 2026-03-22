@@ -27,6 +27,17 @@
         .wysiwyg-editor p + ol {
             margin-top: 0.5rem;
         }
+
+        .wysiwyg-editor a {
+            color: #2563eb;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            font-weight: 500;
+        }
+
+        .wysiwyg-editor a:hover {
+            color: #1d4ed8;
+        }
     </style>
 
     <section class="panel">
