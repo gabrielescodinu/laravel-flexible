@@ -22,7 +22,23 @@ class ArticleController extends Controller
             ->orderByDesc('updated_at')
             ->paginate(20);
 
-        return view('admin.articles.index', compact('posts'));
+        $trashedPostsCount = Post::query()->onlyTrashed()->count();
+
+        return view('admin.articles.index', compact('posts', 'trashedPostsCount'));
+    }
+
+    public function trash(): View
+    {
+        $posts = Post::query()
+            ->onlyTrashed()
+            ->with('categories:id,name,slug')
+            ->withCount('categories')
+            ->orderByDesc('deleted_at')
+            ->paginate(20);
+
+        $trashedPostsCount = (int) $posts->total();
+
+        return view('admin.articles.trash', compact('posts', 'trashedPostsCount'));
     }
 
     public function create(): View
@@ -81,7 +97,33 @@ class ArticleController extends Controller
 
         return redirect()
             ->route('admin.articles.index')
-            ->with('success', 'Articolo eliminato.');
+            ->with('success', 'Articolo spostato nel cestino.');
+    }
+
+    public function restoreFromTrash(int $postId): RedirectResponse
+    {
+        $post = Post::query()
+            ->onlyTrashed()
+            ->findOrFail($postId);
+
+        $post->restore();
+
+        return redirect()
+            ->route('admin.articles.trash')
+            ->with('success', 'Articolo ripristinato.');
+    }
+
+    public function forceDeleteFromTrash(int $postId): RedirectResponse
+    {
+        $post = Post::query()
+            ->onlyTrashed()
+            ->findOrFail($postId);
+
+        $post->forceDelete();
+
+        return redirect()
+            ->route('admin.articles.trash')
+            ->with('success', 'Articolo eliminato definitivamente.');
     }
 
     private function persist(Request $request, Post $post): Post

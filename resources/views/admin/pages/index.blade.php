@@ -10,7 +10,10 @@
                 <h1 class="mt-1 text-2xl font-bold text-slate-900">Page Builder</h1>
                 <p class="muted mt-2 max-w-2xl">Componi pagine con sezioni modulari, riordinabili e riusabili.</p>
             </div>
-            <a class="btn btn-primary" href="{{ route('admin.pages.create') }}">Nuova pagina</a>
+            <div class="flex flex-wrap gap-2">
+                <a class="btn btn-secondary" href="{{ route('admin.pages.trash') }}">Cestino ({{ $trashedPagesCount }})</a>
+                <a class="btn btn-primary" href="{{ route('admin.pages.create') }}">Nuova pagina</a>
+            </div>
         </div>
     </section>
 
@@ -51,6 +54,18 @@
                                         @if ($page->status === 'published')
                                             <a class="btn btn-secondary" href="{{ $page->slug === 'home' ? route('pages.home') : route('pages.show', $page->slug) }}">Apri</a>
                                         @endif
+                                        <form
+                                            action="{{ route('admin.pages.destroy', $page) }}"
+                                            method="POST"
+                                            data-confirm-title="Sposta pagina nel cestino"
+                                            data-confirm-message="Vuoi spostare questa pagina nel cestino?"
+                                            data-confirm-label="Sposta nel cestino"
+                                            data-confirm-variant="danger"
+                                        >
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-danger" type="submit">Elimina</button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>

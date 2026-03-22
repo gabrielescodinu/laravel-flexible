@@ -160,4 +160,46 @@ class PageBuilderFeatureTest extends TestCase
         $this->post(route('admin.pages.revisions.restore', [$pageA, $foreignRevision]))
             ->assertNotFound();
     }
+
+    public function test_page_can_be_moved_to_trash_restored_and_force_deleted(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $page = Page::query()->create([
+            'title' => 'Pagina cestino',
+            'slug' => 'pagina-cestino',
+            'status' => 'draft',
+        ]);
+        $page->blocks()->create([
+            'type' => 'hero',
+            'data' => ['title' => 'Titolo'],
+            'sort_order' => 0,
+        ]);
+
+        $this->delete(route('admin.pages.destroy', $page))
+            ->assertRedirect(route('admin.pages.index'));
+
+        $this->assertSoftDeleted('pages', [
+            'id' => $page->id,
+        ]);
+
+        $this->post(route('admin.pages.restore', $page->id))
+            ->assertRedirect(route('admin.pages.trash'));
+
+        $this->assertDatabaseHas('pages', [
+            'id' => $page->id,
+            'deleted_at' => null,
+        ]);
+
+        $this->delete(route('admin.pages.destroy', $page))
+            ->assertRedirect(route('admin.pages.index'));
+
+        $this->delete(route('admin.pages.force-delete', $page->id))
+            ->assertRedirect(route('admin.pages.trash'));
+
+        $this->assertDatabaseMissing('pages', [
+            'id' => $page->id,
+        ]);
+    }
 }

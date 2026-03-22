@@ -13,6 +13,7 @@
 
             <div class="flex flex-wrap gap-2">
                 <a class="btn btn-secondary" href="{{ route('admin.categories.index') }}">Categorie</a>
+                <a class="btn btn-secondary" href="{{ route('admin.articles.trash') }}">Cestino ({{ $trashedPostsCount }})</a>
                 <a class="btn btn-primary" href="{{ route('admin.articles.create') }}">Nuovo articolo</a>
             </div>
         </div>
@@ -70,9 +71,9 @@
                                         <form
                                             action="{{ route('admin.articles.destroy', $post) }}"
                                             method="POST"
-                                            data-confirm-title="Elimina articolo"
-                                            data-confirm-message="Vuoi eliminare questo articolo? Questa azione non puo essere annullata."
-                                            data-confirm-label="Elimina"
+                                            data-confirm-title="Sposta articolo nel cestino"
+                                            data-confirm-message="Vuoi spostare questo articolo nel cestino?"
+                                            data-confirm-label="Sposta nel cestino"
                                             data-confirm-variant="danger"
                                         >
                                             @csrf

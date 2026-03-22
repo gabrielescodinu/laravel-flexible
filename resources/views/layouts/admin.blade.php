@@ -14,15 +14,21 @@
         $totalPosts = 0;
         $draftPosts = 0;
         $publishedPosts = 0;
+        $trashedPosts = 0;
         $totalCategories = 0;
         $totalMedia = 0;
         $imageMedia = 0;
         $documentMedia = 0;
+        $trashedPages = 0;
 
         if (\Illuminate\Support\Facades\Schema::hasTable('pages')) {
             $totalPages = \App\Models\Page::query()->count();
             $draftPages = \App\Models\Page::query()->where('status', 'draft')->count();
             $publishedPages = \App\Models\Page::query()->where('status', 'published')->count();
+
+            if (\Illuminate\Support\Facades\Schema::hasColumn('pages', 'deleted_at')) {
+                $trashedPages = \App\Models\Page::query()->onlyTrashed()->count();
+            }
         }
 
         if (\Illuminate\Support\Facades\Schema::hasTable('media')) {
@@ -35,6 +41,10 @@
             $totalPosts = \App\Models\Post::query()->count();
             $draftPosts = \App\Models\Post::query()->where('status', 'draft')->count();
             $publishedPosts = \App\Models\Post::query()->where('status', 'published')->count();
+
+            if (\Illuminate\Support\Facades\Schema::hasColumn('posts', 'deleted_at')) {
+                $trashedPosts = \App\Models\Post::query()->onlyTrashed()->count();
+            }
         }
 
         if (\Illuminate\Support\Facades\Schema::hasTable('categories')) {
@@ -138,6 +148,13 @@
                             <span>Nuova</span>
                             <span class="text-slate-400">+</span>
                         </a>
+                        <a
+                            href="{{ route('admin.pages.trash') }}"
+                            class="col-span-2 flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.pages.trash') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
+                        >
+                            <span>Cestino</span>
+                            <span class="text-slate-400">{{ $trashedPages }}</span>
+                        </a>
                         <div class="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-slate-700">
                             <span>Published</span>
                             <span class="text-slate-400">{{ $publishedPages }}</span>
@@ -169,6 +186,13 @@
                         >
                             <span>Categorie</span>
                             <span class="text-slate-400">{{ $totalCategories }}</span>
+                        </a>
+                        <a
+                            href="{{ route('admin.articles.trash') }}"
+                            class="flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.articles.trash') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
+                        >
+                            <span>Cestino</span>
+                            <span class="text-slate-400">{{ $trashedPosts }}</span>
                         </a>
                         <div class="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-slate-700">
                             <span>Published</span>
@@ -317,6 +341,16 @@
                             </span>
                             <span class="text-slate-400">+</span>
                         </a>
+                        <a
+                            href="{{ route('admin.pages.trash') }}"
+                            class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.pages.trash') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                        >
+                            <span class="inline-flex items-center gap-2">
+                                <span class="inline-block h-2 w-2 rounded-full bg-slate-400"></span>
+                                Cestino
+                            </span>
+                            <span class="text-slate-400">{{ $trashedPages }}</span>
+                        </a>
                     </div>
 
                     <div class="my-6 border-t border-slate-200"></div>
@@ -355,6 +389,13 @@
                         >
                             <span>Categorie</span>
                             <span class="text-slate-400">{{ $totalCategories }}</span>
+                        </a>
+                        <a
+                            href="{{ route('admin.articles.trash') }}"
+                            class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.articles.trash') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                        >
+                            <span>Cestino</span>
+                            <span class="text-slate-400">{{ $trashedPosts }}</span>
                         </a>
                     </div>
 

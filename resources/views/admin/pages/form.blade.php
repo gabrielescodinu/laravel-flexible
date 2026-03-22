@@ -15,6 +15,18 @@
                     <button type="button" class="btn btn-secondary" data-open-revisions>
                         Revisioni ({{ $revisions->count() }})
                     </button>
+                    <form
+                        action="{{ route('admin.pages.destroy', $page) }}"
+                        method="POST"
+                        data-confirm-title="Sposta pagina nel cestino"
+                        data-confirm-message="Vuoi spostare questa pagina nel cestino?"
+                        data-confirm-label="Sposta nel cestino"
+                        data-confirm-variant="danger"
+                    >
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger">Elimina</button>
+                    </form>
                 @endif
                 <a class="btn btn-secondary" href="{{ route('admin.pages.index') }}">Torna alla lista</a>
             </div>

@@ -109,8 +109,30 @@ class ArticleAdminTest extends TestCase
         $this->delete(route('admin.articles.destroy', $post))
             ->assertRedirect(route('admin.articles.index'));
 
+        $this->assertSoftDeleted('posts', [
+            'id' => $post->id,
+        ]);
+
+        $this->post(route('admin.articles.restore', $post->id))
+            ->assertRedirect(route('admin.articles.trash'));
+
+        $this->assertDatabaseHas('posts', [
+            'id' => $post->id,
+            'deleted_at' => null,
+        ]);
+
+        $this->delete(route('admin.articles.destroy', $post))
+            ->assertRedirect(route('admin.articles.index'));
+
+        $this->delete(route('admin.articles.force-delete', $post->id))
+            ->assertRedirect(route('admin.articles.trash'));
+
         $this->assertDatabaseMissing('posts', [
             'id' => $post->id,
+        ]);
+        $this->assertDatabaseMissing('category_post', [
+            'post_id' => $post->id,
+            'category_id' => $categoryB->id,
         ]);
     }
 }

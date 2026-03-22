@@ -22,7 +22,22 @@ class PageBuilderController extends Controller
             ->orderByDesc('updated_at')
             ->get();
 
-        return view('admin.pages.index', compact('pages'));
+        $trashedPagesCount = Page::query()->onlyTrashed()->count();
+
+        return view('admin.pages.index', compact('pages', 'trashedPagesCount'));
+    }
+
+    public function trash(): View
+    {
+        $pages = Page::query()
+            ->onlyTrashed()
+            ->withCount('blocks')
+            ->orderByDesc('deleted_at')
+            ->paginate(20);
+
+        $trashedPagesCount = (int) $pages->total();
+
+        return view('admin.pages.trash', compact('pages', 'trashedPagesCount'));
     }
 
     public function create(BlockRegistry $registry): View
@@ -77,6 +92,41 @@ class PageBuilderController extends Controller
         return redirect()
             ->route('admin.pages.edit', $page)
             ->with('success', 'Pagina aggiornata.');
+    }
+
+    public function destroy(Page $page): RedirectResponse
+    {
+        $page->delete();
+
+        return redirect()
+            ->route('admin.pages.index')
+            ->with('success', 'Pagina spostata nel cestino.');
+    }
+
+    public function restoreFromTrash(int $pageId): RedirectResponse
+    {
+        $page = Page::query()
+            ->onlyTrashed()
+            ->findOrFail($pageId);
+
+        $page->restore();
+
+        return redirect()
+            ->route('admin.pages.trash')
+            ->with('success', 'Pagina ripristinata.');
+    }
+
+    public function forceDeleteFromTrash(int $pageId): RedirectResponse
+    {
+        $page = Page::query()
+            ->onlyTrashed()
+            ->findOrFail($pageId);
+
+        $page->forceDelete();
+
+        return redirect()
+            ->route('admin.pages.trash')
+            ->with('success', 'Pagina eliminata definitivamente.');
     }
 
     public function restore(Page $page, PageRevision $revision, BlockRegistry $registry): RedirectResponse

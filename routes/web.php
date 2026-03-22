@@ -16,18 +16,25 @@ Route::prefix('admin')
         Route::redirect('/', '/admin/pages');
 
         Route::get('/pages', [PageBuilderController::class, 'index'])->name('pages.index');
+        Route::get('/pages/trash', [PageBuilderController::class, 'trash'])->name('pages.trash');
         Route::get('/pages/create', [PageBuilderController::class, 'create'])->name('pages.create');
         Route::post('/pages', [PageBuilderController::class, 'store'])->name('pages.store');
         Route::get('/pages/{page}/edit', [PageBuilderController::class, 'edit'])->name('pages.edit');
         Route::put('/pages/{page}', [PageBuilderController::class, 'update'])->name('pages.update');
+        Route::delete('/pages/{page}', [PageBuilderController::class, 'destroy'])->name('pages.destroy');
+        Route::post('/pages/trash/{pageId}/restore', [PageBuilderController::class, 'restoreFromTrash'])->name('pages.restore');
+        Route::delete('/pages/trash/{pageId}/force', [PageBuilderController::class, 'forceDeleteFromTrash'])->name('pages.force-delete');
         Route::post('/pages/{page}/revisions/{revision}/restore', [PageBuilderController::class, 'restore'])->name('pages.revisions.restore');
 
         Route::get('/articles', [AdminArticleController::class, 'index'])->name('articles.index');
+        Route::get('/articles/trash', [AdminArticleController::class, 'trash'])->name('articles.trash');
         Route::get('/articles/create', [AdminArticleController::class, 'create'])->name('articles.create');
         Route::post('/articles', [AdminArticleController::class, 'store'])->name('articles.store');
         Route::get('/articles/{post}/edit', [AdminArticleController::class, 'edit'])->name('articles.edit');
         Route::put('/articles/{post}', [AdminArticleController::class, 'update'])->name('articles.update');
         Route::delete('/articles/{post}', [AdminArticleController::class, 'destroy'])->name('articles.destroy');
+        Route::post('/articles/trash/{postId}/restore', [AdminArticleController::class, 'restoreFromTrash'])->name('articles.restore');
+        Route::delete('/articles/trash/{postId}/force', [AdminArticleController::class, 'forceDeleteFromTrash'])->name('articles.force-delete');
 
         Route::get('/categories', [AdminCategoryController::class, 'index'])->name('categories.index');
         Route::post('/categories', [AdminCategoryController::class, 'store'])->name('categories.store');
