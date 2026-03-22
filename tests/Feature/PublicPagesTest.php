@@ -18,8 +18,17 @@ class PublicPagesTest extends TestCase
             'status' => 'published',
         ]);
         $home->blocks()->create([
-            'type' => 'rich_text',
-            'data' => ['content' => 'Contenuto home'],
+            'type' => 'hero',
+            'data' => [
+                'title' => 'Hero Home',
+                'description' => 'Contenuto home',
+                'button_primary_text' => '',
+                'button_primary_url' => '',
+                'button_secondary_text' => '',
+                'button_secondary_url' => '',
+                'image_url' => '',
+                'image_alt' => '',
+            ],
             'sort_order' => 0,
         ]);
 

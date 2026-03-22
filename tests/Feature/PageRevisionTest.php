@@ -22,24 +22,15 @@ class PageRevisionTest extends TestCase
             'status' => 'draft',
             'blocks' => [
                 [
-                    'type' => 'travel_cards_grid',
+                    'type' => 'stats_grid',
                     'sort_order' => 0,
                     'data' => [
-                        'section_title' => 'Destinazioni A',
-                        'section_subtitle' => 'Sottotitolo A',
-                        'cards' => [
+                        'stats_heading' => 'Statistiche A',
+                        'stats_description' => 'Descrizione A',
+                        'stats_items' => [
                             [
-                                'title' => 'Card A',
-                                'meta' => 'Meta A',
-                                'description' => 'Descrizione A',
-                                'price' => '$100 / night',
-                                'badge' => 'Top rated',
-                                'tag_1' => 'Adventure',
-                                'tag_2' => 'Nature',
-                                'rating' => '4.9',
-                                'image_url' => 'https://example.com/a.jpg',
-                                'cta_text' => 'Book',
-                                'cta_url' => '#',
+                                'stat_data' => '100',
+                                'stat_title' => 'Card A',
                             ],
                         ],
                     ],
@@ -55,24 +46,15 @@ class PageRevisionTest extends TestCase
             'status' => 'published',
             'blocks' => [
                 [
-                    'type' => 'travel_cards_grid',
+                    'type' => 'stats_grid',
                     'sort_order' => 0,
                     'data' => [
-                        'section_title' => 'Destinazioni B',
-                        'section_subtitle' => 'Sottotitolo B',
-                        'cards' => [
+                        'stats_heading' => 'Statistiche B',
+                        'stats_description' => 'Descrizione B',
+                        'stats_items' => [
                             [
-                                'title' => 'Card B',
-                                'meta' => 'Meta B',
-                                'description' => 'Descrizione B',
-                                'price' => '$200 / night',
-                                'badge' => 'Top rated',
-                                'tag_1' => 'Adventure',
-                                'tag_2' => 'Culture',
-                                'rating' => '4.7',
-                                'image_url' => 'https://example.com/b.jpg',
-                                'cta_text' => 'Book',
-                                'cta_url' => '#',
+                                'stat_data' => '200',
+                                'stat_title' => 'Card B',
                             ],
                         ],
                     ],
@@ -88,11 +70,11 @@ class PageRevisionTest extends TestCase
 
         $page->refresh();
         $restoredBlock = $page->blocks()->firstOrFail();
-        $cards = $restoredBlock->data['cards'] ?? [];
+        $statsItems = $restoredBlock->data['stats_items'] ?? [];
 
         $this->assertSame('Versione A', $page->title);
         $this->assertSame('draft', $page->status);
-        $this->assertSame('Card A', $cards[0]['title'] ?? null);
+        $this->assertSame('Card A', $statsItems[0]['stat_title'] ?? null);
         $this->assertCount(3, $page->revisions);
     }
 }

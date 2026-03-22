@@ -32,11 +32,21 @@ class PageBuilderFeatureTest extends TestCase
                     ],
                 ],
                 [
-                    'type' => 'feature_list',
+                    'type' => 'stats_grid',
                     'sort_order' => 0,
                     'data' => [
-                        'title' => 'Features',
-                        'items' => "Uno\n\nDue\n",
+                        'stats_heading' => 'KPI',
+                        'stats_description' => 'Numeri principali',
+                        'stats_items' => [
+                            [
+                                'stat_data' => '10+',
+                                'stat_title' => 'Uno',
+                            ],
+                            [
+                                'stat_data' => '20+',
+                                'stat_title' => 'Due',
+                            ],
+                        ],
                     ],
                 ],
             ],
@@ -47,8 +57,8 @@ class PageBuilderFeatureTest extends TestCase
 
         $this->assertSame('Homepage', $page->title);
         $this->assertCount(2, $page->blocks);
-        $this->assertSame('feature_list', $page->blocks[0]->type);
-        $this->assertSame(['Uno', 'Due'], $page->blocks[0]->data['items'] ?? []);
+        $this->assertSame('stats_grid', $page->blocks[0]->type);
+        $this->assertSame('Uno', $page->blocks[0]->data['stats_items'][0]['stat_title'] ?? null);
 
         $this->assertCount(1, $page->revisions);
         $this->assertSame('Creazione pagina', $page->revisions[0]->label);
@@ -65,8 +75,8 @@ class PageBuilderFeatureTest extends TestCase
             'status' => 'draft',
         ]);
         $page->blocks()->create([
-            'type' => 'rich_text',
-            'data' => ['content' => 'Prima versione'],
+            'type' => 'hero',
+            'data' => ['title' => 'Prima versione', 'description' => 'Contenuto iniziale'],
             'sort_order' => 0,
         ]);
         $page->revisions()->create([
@@ -78,8 +88,8 @@ class PageBuilderFeatureTest extends TestCase
                 'status' => $page->status,
             ],
             'blocks' => [[
-                'type' => 'rich_text',
-                'data' => ['content' => 'Prima versione'],
+                'type' => 'hero',
+                'data' => ['title' => 'Prima versione', 'description' => 'Contenuto iniziale'],
                 'sort_order' => 0,
             ]],
         ]);
@@ -90,13 +100,20 @@ class PageBuilderFeatureTest extends TestCase
             'status' => 'published',
             'blocks' => [
                 [
-                    'type' => 'cta',
+                    'type' => 'features',
                     'sort_order' => 0,
                     'data' => [
-                        'title' => 'Pronto?',
-                        'text' => 'Testo CTA',
-                        'button_label' => 'Scopri',
-                        'button_url' => '/cta',
+                        'features_heading_top' => 'Sezione',
+                        'features_heading_main' => 'Funzionalita',
+                        'features_description' => 'Dettaglio',
+                        'features' => [
+                            [
+                                'feature_icon' => '',
+                                'feature_icon_alt' => 'Icona',
+                                'feature_title' => 'Feature 1',
+                                'feature_desc' => 'Descrizione 1',
+                            ],
+                        ],
                     ],
                 ],
             ],
@@ -108,7 +125,7 @@ class PageBuilderFeatureTest extends TestCase
         $this->assertSame('pagina-aggiornata', $page->slug);
         $this->assertSame('published', $page->status);
         $this->assertCount(1, $page->blocks);
-        $this->assertSame('cta', $page->blocks[0]->type);
+        $this->assertSame('features', $page->blocks[0]->type);
         $this->assertCount(2, $page->revisions);
         $this->assertSame('Salvataggio manuale', $page->revisions[0]->label);
     }
