@@ -20,6 +20,7 @@
 
             <nav class="flex items-center gap-2">
                 <a href="{{ route('pages.home') }}" class="btn btn-secondary">Home</a>
+                <a href="{{ route('articles.index') }}" class="btn btn-secondary">Blog</a>
                 @auth
                     <a href="{{ route('admin.pages.index') }}" class="btn btn-primary">Admin Builder</a>
                     <form method="POST" action="{{ route('logout') }}">
