@@ -47,8 +47,8 @@
             @endif
 
             @if ($featuresDescription !== '')
-                <div class="editor-styles-wrapper text-secondary text-xl text-slate-600">
-                    {!! nl2br(e($featuresDescription)) !!}
+                <div class="editor-styles-wrapper text-secondary text-xl text-slate-600 [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6">
+                    {!! $featuresDescription !!}
                 </div>
             @endif
         </div>
@@ -77,8 +77,8 @@
                                 @endif
 
                                 @if ($item['feature_desc'] !== '')
-                                    <div class="editor-styles-wrapper-small text-ui-ink text-slate-600">
-                                        {!! nl2br(e($item['feature_desc'])) !!}
+                                    <div class="editor-styles-wrapper-small text-ui-ink text-slate-600 [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6">
+                                        {!! $item['feature_desc'] !!}
                                     </div>
                                 @endif
                             </div>

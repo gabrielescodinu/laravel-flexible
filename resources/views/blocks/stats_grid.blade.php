@@ -36,8 +36,8 @@
             @endif
 
             @if ($statsDescription !== '')
-                <div class="editor-styles-wrapper text-ui-body mt-4 text-xl text-slate-600">
-                    {!! nl2br(e($statsDescription)) !!}
+                <div class="editor-styles-wrapper text-ui-body mt-4 text-xl text-slate-600 [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6">
+                    {!! $statsDescription !!}
                 </div>
             @endif
         </div>

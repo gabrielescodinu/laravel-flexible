@@ -37,8 +37,8 @@
         @endif
 
         @if ($partnersContent !== '')
-            <div class="editor-styles-wrapper mt-16 text-lg text-slate-600">
-                {!! nl2br(e($partnersContent)) !!}
+            <div class="editor-styles-wrapper mt-16 text-lg text-slate-600 [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6">
+                {!! $partnersContent !!}
             </div>
         @endif
 

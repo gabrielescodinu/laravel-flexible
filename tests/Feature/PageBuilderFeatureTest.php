@@ -202,4 +202,39 @@ class PageBuilderFeatureTest extends TestCase
             'id' => $page->id,
         ]);
     }
+
+    public function test_wysiwyg_description_is_sanitized_and_persists_formatting(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $this->post(route('admin.pages.store'), [
+            'title' => 'Pagina WYSIWYG',
+            'slug' => 'pagina-wysiwyg',
+            'status' => 'draft',
+            'blocks' => [
+                [
+                    'type' => 'hero',
+                    'sort_order' => 0,
+                    'data' => [
+                        'title' => 'Hero',
+                        'description' => '<p><strong>Testo forte</strong></p><ul><li>Elemento</li></ul><script>alert(1)</script><a href="javascript:alert(1)" onclick="x()">Link</a>',
+                        'button_primary_text' => 'Vai',
+                        'button_primary_url' => '/go',
+                    ],
+                ],
+            ],
+        ])->assertRedirect();
+
+        $page = Page::query()->where('slug', 'pagina-wysiwyg')->firstOrFail();
+        $page->load('blocks');
+
+        $description = (string) ($page->blocks[0]->data['description'] ?? '');
+
+        $this->assertStringContainsString('<strong>Testo forte</strong>', $description);
+        $this->assertStringContainsString('<ul><li>Elemento</li></ul>', str_replace(["\n", "\r"], '', $description));
+        $this->assertStringNotContainsString('<script', $description);
+        $this->assertStringNotContainsString('javascript:', $description);
+        $this->assertStringContainsString('<a>Link</a>', str_replace(["\n", "\r"], '', $description));
+    }
 }

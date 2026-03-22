@@ -27,8 +27,8 @@
             @endif
 
             @if ($description !== '')
-                <div class="editor-styles-wrapper mb-8 max-w-2xl text-lg text-ui-body">
-                    {!! nl2br(e($description)) !!}
+                <div class="editor-styles-wrapper mb-8 max-w-2xl text-lg text-ui-body [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6">
+                    {!! $description !!}
                 </div>
             @endif
 

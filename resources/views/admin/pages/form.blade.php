@@ -305,6 +305,120 @@
                 return input;
             }
 
+            function escapeHtml(value) {
+                return String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function normalizeEditorHtml(value) {
+                const raw = Array.isArray(value) ? value.join('\n') : String(value ?? '');
+                const trimmed = raw.trim();
+
+                if (trimmed === '') {
+                    return '';
+                }
+
+                if (/<\s*[a-z][^>]*>/i.test(trimmed)) {
+                    return trimmed;
+                }
+
+                return trimmed
+                    .split(/\r\n|\r|\n/)
+                    .map((line) => `<p>${line === '' ? '<br>' : escapeHtml(line)}</p>`)
+                    .join('');
+            }
+
+            function makeWysiwygField(field, inputName, value, options = {}) {
+                const wrapper = document.createElement('div');
+                wrapper.className = options.fullWidth === false ? 'field' : 'field md:col-span-2';
+
+                const label = document.createElement('label');
+                label.className = 'field-label';
+                label.textContent = field.label || 'Contenuto';
+                wrapper.appendChild(label);
+
+                const toolbar = document.createElement('div');
+                toolbar.className = 'mb-2 flex flex-wrap items-center gap-1 rounded-xl border border-slate-200 bg-white p-1';
+                wrapper.appendChild(toolbar);
+
+                const editor = document.createElement('div');
+                editor.className = 'min-h-28 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none';
+                editor.contentEditable = 'true';
+                editor.innerHTML = normalizeEditorHtml(value);
+                wrapper.appendChild(editor);
+
+                const hiddenInput = document.createElement('textarea');
+                hiddenInput.className = 'hidden';
+                hiddenInput.name = inputName;
+                wrapper.appendChild(hiddenInput);
+
+                const syncValue = () => {
+                    hiddenInput.value = editor.innerHTML.trim();
+                };
+
+                const applyCommand = (command, commandValue = null) => {
+                    editor.focus();
+                    if (commandValue === null) {
+                        document.execCommand(command, false);
+                    } else {
+                        document.execCommand(command, false, commandValue);
+                    }
+                    syncValue();
+                };
+
+                const makeToolbarButton = (labelText, onClick, title = '') => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-slate-200 px-2 text-xs font-semibold text-slate-700 hover:bg-slate-100';
+                    button.textContent = labelText;
+                    if (title !== '') {
+                        button.title = title;
+                    }
+
+                    button.addEventListener('mousedown', (event) => {
+                        event.preventDefault();
+                    });
+
+                    button.addEventListener('click', onClick);
+
+                    return button;
+                };
+
+                toolbar.appendChild(makeToolbarButton('B', () => applyCommand('bold'), 'Grassetto'));
+                toolbar.appendChild(makeToolbarButton('I', () => applyCommand('italic'), 'Corsivo'));
+                toolbar.appendChild(makeToolbarButton('•', () => applyCommand('insertUnorderedList'), 'Lista puntata'));
+                toolbar.appendChild(makeToolbarButton('1.', () => applyCommand('insertOrderedList'), 'Lista numerata'));
+                toolbar.appendChild(makeToolbarButton('Link', () => {
+                    const rawLink = window.prompt('Inserisci URL', 'https://');
+                    if (!rawLink) {
+                        return;
+                    }
+
+                    const link = rawLink.trim();
+                    if (link === '') {
+                        return;
+                    }
+
+                    applyCommand('createLink', link);
+                }, 'Inserisci link'));
+                toolbar.appendChild(makeToolbarButton('Tx', () => applyCommand('removeFormat'), 'Rimuovi formato'));
+
+                editor.addEventListener('input', syncValue);
+                editor.addEventListener('blur', syncValue);
+                syncValue();
+
+                const hint = document.createElement('small');
+                hint.className = 'muted';
+                hint.textContent = 'Supporta grassetto, corsivo, liste e link.';
+                wrapper.appendChild(hint);
+
+                return wrapper;
+            }
+
             function openMediaPicker(context) {
                 const overlay = document.createElement('div');
                 overlay.className = 'fixed inset-0 z-[90] flex items-center justify-center bg-black/45 p-4';
@@ -642,6 +756,11 @@
                                 return;
                             }
 
+                            if (subField.type === 'textarea' || subField.type === 'wysiwyg') {
+                                grid.appendChild(makeWysiwygField(subField, subInputName, rawValue));
+                                return;
+                            }
+
                             const subFieldWrapper = document.createElement('div');
                             subFieldWrapper.className = 'field';
                             grid.appendChild(subFieldWrapper);
@@ -696,6 +815,10 @@
 
                 if (field.type === 'media_image') {
                     return makeMediaImageField(field, baseInputName, value);
+                }
+
+                if (field.type === 'textarea' || field.type === 'wysiwyg') {
+                    return makeWysiwygField(field, baseInputName, value);
                 }
 
                 const wrapper = document.createElement('div');

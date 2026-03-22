@@ -6,6 +6,20 @@ use Illuminate\Support\Arr;
 
 class BlockRegistry
 {
+    private const RICH_TEXT_ALLOWED_TAGS = [
+        'p',
+        'br',
+        'strong',
+        'b',
+        'em',
+        'i',
+        'u',
+        'ul',
+        'ol',
+        'li',
+        'a',
+    ];
+
     /**
      * @var array<string, array<string, mixed>>
      */
@@ -164,6 +178,12 @@ class BlockRegistry
                 continue;
             }
 
+            if ($fieldType === 'textarea' || $fieldType === 'wysiwyg') {
+                $sanitized[$name] = $this->sanitizeRichText($value);
+
+                continue;
+            }
+
             if ($fieldType === 'repeater') {
                 $items = is_array($value) ? array_values($value) : [];
                 $defaultItems = is_array($default) ? $default : [];
@@ -206,6 +226,12 @@ class BlockRegistry
                                 static fn (mixed $listItem): string => trim((string) $listItem),
                                 $listItems
                             ), static fn (string $listItem): bool => $listItem !== ''));
+
+                            continue;
+                        }
+
+                        if ($repeaterType === 'textarea' || $repeaterType === 'wysiwyg') {
+                            $normalizedItem[$repeaterName] = $this->sanitizeRichText($repeaterValue);
 
                             continue;
                         }
@@ -322,5 +348,120 @@ class BlockRegistry
         }
 
         return $formatted;
+    }
+
+    private function sanitizeRichText(mixed $value): string
+    {
+        $html = trim((string) $value);
+        if ($html === '') {
+            return '';
+        }
+
+        $previousInternalErrors = libxml_use_internal_errors(true);
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $encodedHtml = mb_convert_encoding('<div>'.$html.'</div>', 'HTML-ENTITIES', 'UTF-8');
+
+        $loaded = $dom->loadHTML($encodedHtml, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousInternalErrors);
+
+        if (! $loaded) {
+            return strip_tags($html);
+        }
+
+        $wrapper = $dom->getElementsByTagName('div')->item(0);
+        if (! $wrapper instanceof \DOMElement) {
+            return strip_tags($html);
+        }
+
+        $this->sanitizeRichTextNode($wrapper);
+
+        $sanitizedHtml = '';
+        foreach ($wrapper->childNodes as $childNode) {
+            $sanitizedHtml .= $dom->saveHTML($childNode);
+        }
+
+        return trim($sanitizedHtml);
+    }
+
+    private function sanitizeRichTextNode(\DOMNode $node): void
+    {
+        for ($index = $node->childNodes->length - 1; $index >= 0; $index--) {
+            $child = $node->childNodes->item($index);
+
+            if (! $child instanceof \DOMNode) {
+                continue;
+            }
+
+            if ($child instanceof \DOMComment) {
+                $node->removeChild($child);
+
+                continue;
+            }
+
+            if ($child instanceof \DOMElement) {
+                $tagName = strtolower($child->tagName);
+
+                if (! in_array($tagName, self::RICH_TEXT_ALLOWED_TAGS, true)) {
+                    while ($child->firstChild) {
+                        $node->insertBefore($child->firstChild, $child);
+                    }
+
+                    $node->removeChild($child);
+
+                    continue;
+                }
+
+                if ($tagName === 'a') {
+                    $href = trim($child->getAttribute('href'));
+                    $target = trim($child->getAttribute('target'));
+
+                    while ($child->attributes->length > 0) {
+                        $attribute = $child->attributes->item(0);
+                        if (! $attribute instanceof \DOMAttr) {
+                            break;
+                        }
+                        $child->removeAttributeNode($attribute);
+                    }
+
+                    $safeHref = $this->sanitizeHref($href);
+                    if ($safeHref !== null) {
+                        $child->setAttribute('href', $safeHref);
+                    }
+
+                    if ($target === '_blank') {
+                        $child->setAttribute('target', '_blank');
+                        $child->setAttribute('rel', 'noopener noreferrer');
+                    }
+                } else {
+                    while ($child->attributes->length > 0) {
+                        $attribute = $child->attributes->item(0);
+                        if (! $attribute instanceof \DOMAttr) {
+                            break;
+                        }
+                        $child->removeAttributeNode($attribute);
+                    }
+                }
+            }
+
+            $this->sanitizeRichTextNode($child);
+        }
+    }
+
+    private function sanitizeHref(string $href): ?string
+    {
+        if ($href === '') {
+            return null;
+        }
+
+        if (str_starts_with($href, '#') || str_starts_with($href, '/')) {
+            return $href;
+        }
+
+        if (str_starts_with($href, 'mailto:') || str_starts_with($href, 'tel:')) {
+            return $href;
+        }
+
+        return filter_var($href, FILTER_VALIDATE_URL) ? $href : null;
     }
 }
