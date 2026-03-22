@@ -50,6 +50,29 @@ class BlockRegistry
                 ['name' => 'button_url', 'label' => 'URL bottone', 'type' => 'text', 'default' => '#'],
             ],
         ],
+        'stats_grid' => [
+            'label' => 'Stats Grid',
+            'view' => 'blocks.stats_grid',
+            'fields' => [
+                ['name' => 'stats_heading', 'label' => 'Titolo sezione', 'type' => 'text', 'default' => 'Numeri che raccontano la crescita'],
+                ['name' => 'stats_description', 'label' => 'Descrizione sezione', 'type' => 'textarea', 'default' => 'Metriche chiave e risultati concreti in un colpo d occhio.'],
+                [
+                    'name' => 'stats_items',
+                    'label' => 'Statistiche',
+                    'type' => 'repeater',
+                    'fields' => [
+                        ['name' => 'stat_data', 'label' => 'Valore', 'type' => 'text', 'default' => '12K+'],
+                        ['name' => 'stat_title', 'label' => 'Titolo', 'type' => 'text', 'default' => 'Utenti attivi'],
+                    ],
+                    'default' => [
+                        ['stat_data' => '12K+', 'stat_title' => 'Utenti attivi'],
+                        ['stat_data' => '98%', 'stat_title' => 'Soddisfazione clienti'],
+                        ['stat_data' => '240+', 'stat_title' => 'Progetti completati'],
+                        ['stat_data' => '24/7', 'stat_title' => 'Supporto disponibile'],
+                    ],
+                ],
+            ],
+        ],
         'travel_cards_grid' => [
             'label' => 'Travel Cards Grid',
             'view' => 'blocks.travel_cards_grid',
