@@ -3,6 +3,32 @@
 @section('title', $page->exists ? 'Modifica pagina' : 'Nuova pagina')
 
 @section('content')
+    <style>
+        .wysiwyg-editor ul {
+            list-style: disc;
+            margin-left: 1.25rem;
+            padding-left: 0.25rem;
+        }
+
+        .wysiwyg-editor ol {
+            list-style: decimal;
+            margin-left: 1.25rem;
+            padding-left: 0.25rem;
+        }
+
+        .wysiwyg-editor li {
+            margin: 0.125rem 0;
+        }
+
+        .wysiwyg-editor p + p,
+        .wysiwyg-editor ul + p,
+        .wysiwyg-editor ol + p,
+        .wysiwyg-editor p + ul,
+        .wysiwyg-editor p + ol {
+            margin-top: 0.5rem;
+        }
+    </style>
+
     <section class="panel">
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -346,7 +372,7 @@
                 wrapper.appendChild(toolbar);
 
                 const editor = document.createElement('div');
-                editor.className = 'min-h-28 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none';
+                editor.className = 'wysiwyg-editor min-h-28 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none';
                 editor.contentEditable = 'true';
                 editor.innerHTML = normalizeEditorHtml(value);
                 wrapper.appendChild(editor);
