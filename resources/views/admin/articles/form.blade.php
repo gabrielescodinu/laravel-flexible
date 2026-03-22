@@ -73,7 +73,7 @@
             <h2 class="text-lg font-semibold text-slate-900">Media e categorie</h2>
 
             <div class="field">
-                <label class="field-label" for="featured_image">Immagine in evidenza (URL)</label>
+                <label class="field-label" for="featured_image">Immagine in evidenza</label>
                 <input
                     class="field-input"
                     id="featured_image"
@@ -82,7 +82,11 @@
                     value="{{ old('featured_image', $post->featured_image) }}"
                     placeholder="/storage/media/... oppure https://..."
                 >
-                <small class="muted">Puoi copiare l'URL dal Media Manager.</small>
+                <div class="mt-2 flex flex-wrap items-center gap-2">
+                    <button type="button" class="btn btn-secondary" data-open-featured-picker>Media Manager</button>
+                    <button type="button" class="btn btn-secondary" data-clear-featured-image>Pulisci</button>
+                    <small class="muted">Carica nuovo o seleziona dalla libreria media.</small>
+                </div>
             </div>
 
             <div class="hidden overflow-hidden rounded-xl border border-slate-200 bg-slate-100" data-featured-preview-wrap>
@@ -130,9 +134,15 @@
 
     <script>
         (() => {
+            const form = document.querySelector('form');
             const imageInput = document.getElementById('featured_image');
+            const openPickerButton = document.querySelector('[data-open-featured-picker]');
+            const clearButton = document.querySelector('[data-clear-featured-image]');
             const previewWrap = document.querySelector('[data-featured-preview-wrap]');
             const previewImage = document.querySelector('[data-featured-preview]');
+            const csrfToken = form?.querySelector('input[name="_token"]')?.value || '';
+            const mediaUploadEndpoint = @json(route('admin.media.upload'));
+            const mediaLibraryEndpoint = @json(route('admin.media.library'));
 
             if (!imageInput || !previewWrap || !previewImage) {
                 return;
@@ -150,7 +160,221 @@
                 previewWrap.classList.remove('hidden');
             }
 
+            function openMediaPicker() {
+                const overlay = document.createElement('div');
+                overlay.className = 'fixed inset-0 z-[90] flex items-center justify-center bg-black/45 p-4';
+                overlay.innerHTML = `
+                    <div class="w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                        <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                            <h3 class="text-base font-semibold text-slate-900">Seleziona media</h3>
+                            <button type="button" class="btn btn-secondary" data-close-modal>Chiudi</button>
+                        </div>
+                        <div class="border-b border-slate-200 px-4 py-2">
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-primary" data-tab="library">Libreria</button>
+                                <button type="button" class="btn btn-secondary" data-tab="upload">Carica nuovo</button>
+                            </div>
+                        </div>
+                        <div class="max-h-[70vh] overflow-y-auto p-4">
+                            <section data-panel="library" class="space-y-3">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <input type="text" class="field-input" placeholder="Cerca immagini..." data-library-search>
+                                    <button type="button" class="btn btn-secondary" data-library-refresh>Aggiorna</button>
+                                </div>
+                                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-library-grid></div>
+                            </section>
+
+                            <section data-panel="upload" class="hidden space-y-3">
+                                <p class="text-sm text-slate-600">Carica una nuova immagine nel Media Manager e selezionala subito.</p>
+                                <input type="file" accept="image/*" class="field-input" data-upload-file>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" class="btn btn-primary" data-upload-submit>Carica immagine</button>
+                                    <span class="text-xs text-slate-500" data-upload-status></span>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(overlay);
+
+                const closeButton = overlay.querySelector('[data-close-modal]');
+                const tabButtons = [...overlay.querySelectorAll('[data-tab]')];
+                const libraryPanel = overlay.querySelector('[data-panel="library"]');
+                const uploadPanel = overlay.querySelector('[data-panel="upload"]');
+                const librarySearch = overlay.querySelector('[data-library-search]');
+                const libraryRefresh = overlay.querySelector('[data-library-refresh]');
+                const libraryGrid = overlay.querySelector('[data-library-grid]');
+                const uploadFile = overlay.querySelector('[data-upload-file]');
+                const uploadSubmit = overlay.querySelector('[data-upload-submit]');
+                const uploadStatus = overlay.querySelector('[data-upload-status]');
+
+                if (!closeButton || !libraryPanel || !uploadPanel || !librarySearch || !libraryRefresh || !libraryGrid || !uploadFile || !uploadSubmit || !uploadStatus) {
+                    overlay.remove();
+                    return;
+                }
+
+                const closeModal = () => {
+                    document.removeEventListener('keydown', onEscape);
+                    overlay.remove();
+                };
+
+                const onEscape = (event) => {
+                    if (event.key === 'Escape') {
+                        closeModal();
+                    }
+                };
+
+                document.addEventListener('keydown', onEscape);
+
+                overlay.addEventListener('click', (event) => {
+                    if (event.target === overlay) {
+                        closeModal();
+                    }
+                });
+
+                closeButton.addEventListener('click', closeModal);
+
+                function switchTab(tab) {
+                    const libraryActive = tab === 'library';
+                    libraryPanel.classList.toggle('hidden', !libraryActive);
+                    uploadPanel.classList.toggle('hidden', libraryActive);
+
+                    tabButtons.forEach((button) => {
+                        const isActive = button.getAttribute('data-tab') === tab;
+                        button.className = `btn ${isActive ? 'btn-primary' : 'btn-secondary'}`;
+                    });
+                }
+
+                tabButtons.forEach((button) => {
+                    button.addEventListener('click', () => {
+                        switchTab(button.getAttribute('data-tab') || 'library');
+                    });
+                });
+
+                function selectMedia(url) {
+                    imageInput.value = url;
+                    imageInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    updatePreview();
+                    closeModal();
+                }
+
+                async function loadLibrary(search = '') {
+                    libraryGrid.innerHTML = '<p class="text-sm text-slate-500">Caricamento libreria...</p>';
+                    try {
+                        const params = new URLSearchParams();
+                        if (search.trim() !== '') {
+                            params.set('search', search.trim());
+                        }
+
+                        const response = await fetch(`${mediaLibraryEndpoint}?${params.toString()}`, {
+                            headers: {
+                                Accept: 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                            credentials: 'same-origin',
+                        });
+
+                        const payload = await response.json();
+                        const mediaItems = Array.isArray(payload?.data) ? payload.data : [];
+
+                        if (!response.ok) {
+                            throw new Error(payload?.message || 'Errore nel caricamento libreria');
+                        }
+
+                        if (mediaItems.length === 0) {
+                            libraryGrid.innerHTML = '<p class="text-sm text-slate-500">Nessuna immagine trovata.</p>';
+                            return;
+                        }
+
+                        libraryGrid.innerHTML = '';
+                        mediaItems.forEach((item) => {
+                            const card = document.createElement('button');
+                            card.type = 'button';
+                            card.className = 'overflow-hidden rounded-xl border border-slate-200 bg-white text-left hover:border-slate-400';
+                            card.innerHTML = `
+                                <div class="h-32 w-full bg-slate-100">
+                                    <img src="${item.url}" alt="${item.name}" class="h-full w-full object-cover" loading="lazy">
+                                </div>
+                                <div class="p-2">
+                                    <p class="truncate text-xs font-medium text-slate-800">${item.name}</p>
+                                    <p class="text-[11px] text-slate-500">${item.human_size ?? ''}</p>
+                                </div>
+                            `;
+                            card.addEventListener('click', () => selectMedia(item.url));
+                            libraryGrid.appendChild(card);
+                        });
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Errore nel caricamento libreria';
+                        libraryGrid.innerHTML = `<p class="text-sm text-rose-600">${message}</p>`;
+                    }
+                }
+
+                let searchDebounce = null;
+                librarySearch.addEventListener('input', () => {
+                    if (searchDebounce) {
+                        clearTimeout(searchDebounce);
+                    }
+
+                    searchDebounce = setTimeout(() => {
+                        loadLibrary(librarySearch.value);
+                    }, 250);
+                });
+
+                libraryRefresh.addEventListener('click', () => {
+                    loadLibrary(librarySearch.value);
+                });
+
+                uploadSubmit.addEventListener('click', async () => {
+                    const file = uploadFile.files?.[0];
+                    if (!file) {
+                        uploadStatus.textContent = 'Seleziona prima un file immagine.';
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('_token', csrfToken);
+                    formData.append('file', file);
+
+                    uploadSubmit.disabled = true;
+                    uploadStatus.textContent = 'Upload in corso...';
+
+                    try {
+                        const response = await fetch(mediaUploadEndpoint, {
+                            method: 'POST',
+                            body: formData,
+                            credentials: 'same-origin',
+                            headers: {
+                                Accept: 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                        });
+
+                        const payload = await response.json();
+                        if (!response.ok || !payload.url) {
+                            throw new Error(payload.message || 'Upload non riuscito');
+                        }
+
+                        uploadStatus.textContent = 'Caricato con successo.';
+                        selectMedia(payload.url);
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Errore durante upload immagine';
+                        uploadStatus.textContent = message;
+                    } finally {
+                        uploadSubmit.disabled = false;
+                    }
+                });
+
+                switchTab('library');
+                loadLibrary('');
+            }
+
             imageInput.addEventListener('input', updatePreview);
+            openPickerButton?.addEventListener('click', openMediaPicker);
+            clearButton?.addEventListener('click', () => {
+                imageInput.value = '';
+                updatePreview();
+            });
             updatePreview();
         })();
     </script>
