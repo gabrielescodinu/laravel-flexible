@@ -37,6 +37,10 @@ class ArticleAdminTest extends TestCase
 
         $post = Post::query()->where('slug', 'primo-articolo')->firstOrFail();
 
+        $this->get(route('admin.articles.edit', $post))
+            ->assertOk()
+            ->assertSee('Primo articolo');
+
         $this->assertSame('published', $post->status);
         $this->assertNotNull($post->published_at);
         $this->assertDatabaseHas('category_post', [
@@ -47,5 +51,63 @@ class ArticleAdminTest extends TestCase
         $this->get(route('articles.show', $post->slug))
             ->assertOk()
             ->assertSee('Primo articolo');
+    }
+
+    public function test_admin_can_update_and_delete_article(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $categoryA = Category::query()->create([
+            'name' => 'Design',
+            'slug' => 'design',
+            'description' => null,
+        ]);
+        $categoryB = Category::query()->create([
+            'name' => 'Tech',
+            'slug' => 'tech',
+            'description' => null,
+        ]);
+
+        $post = Post::query()->create([
+            'author_id' => $user->id,
+            'title' => 'Vecchio titolo',
+            'slug' => 'vecchio-titolo',
+            'excerpt' => 'Estratto',
+            'content' => 'Contenuto',
+            'status' => 'draft',
+        ]);
+        $post->categories()->sync([$categoryA->id]);
+
+        $this->put(route('admin.articles.update', $post), [
+            'title' => 'Titolo aggiornato',
+            'slug' => 'titolo-aggiornato',
+            'status' => 'published',
+            'excerpt' => 'Nuovo estratto',
+            'content' => 'Nuovo contenuto',
+            'featured_image' => '/storage/media/new.jpg',
+            'category_ids' => [$categoryB->id],
+        ])->assertRedirect(route('admin.articles.edit', $post));
+
+        $post->refresh();
+        $this->assertSame('Titolo aggiornato', $post->title);
+        $this->assertSame('titolo-aggiornato', $post->slug);
+        $this->assertSame('published', $post->status);
+        $this->assertNotNull($post->published_at);
+        $this->assertDatabaseHas('category_post', [
+            'post_id' => $post->id,
+            'category_id' => $categoryB->id,
+        ]);
+        $this->assertDatabaseMissing('category_post', [
+            'post_id' => $post->id,
+            'category_id' => $categoryA->id,
+        ]);
+
+        $this->delete(route('admin.articles.destroy', $post))
+            ->assertRedirect(route('admin.articles.index'));
+
+        $this->assertDatabaseMissing('posts', [
+            'id' => $post->id,
+        ]);
     }
 }
