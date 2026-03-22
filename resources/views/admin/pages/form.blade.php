@@ -14,6 +14,48 @@
         </div>
     </section>
 
+    @if ($page->exists)
+        <section class="panel space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Revisioni</h2>
+                    <p class="muted mt-1 text-xs">Snapshot automatici ad ogni salvataggio. Puoi ripristinare una versione precedente.</p>
+                </div>
+                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                    {{ $revisions->count() }} recenti
+                </span>
+            </div>
+
+            @if ($revisions->isEmpty())
+                <p class="muted text-sm">Nessuna revisione disponibile.</p>
+            @else
+                <div class="space-y-2">
+                    @foreach ($revisions as $revision)
+                        <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-semibold text-slate-900">
+                                    {{ $revision->label ?: 'Snapshot automatico' }}
+                                </p>
+                                <p class="truncate text-xs text-slate-500">
+                                    #{{ $revision->id }} · {{ $revision->created_at?->format('d/m/Y H:i') }} · {{ $revision->user?->name ?: 'Sistema' }}
+                                </p>
+                            </div>
+
+                            <form
+                                method="POST"
+                                action="{{ route('admin.pages.revisions.restore', [$page, $revision]) }}"
+                                onsubmit="return confirm('Ripristinare questa revisione? Le modifiche correnti verranno sovrascritte.')"
+                            >
+                                @csrf
+                                <button type="submit" class="btn btn-secondary">Ripristina</button>
+                            </form>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </section>
+    @endif
+
     <form id="builder-form" class="space-y-4" method="POST" action="{{ $formAction }}">
         @csrf
         @if ($formMethod !== 'POST')
@@ -163,6 +205,8 @@
                 if (Array.isArray(value)) {
                     input.value = value.join('\n');
                 } else if (value === null || value === undefined) {
+                    input.value = '';
+                } else if (typeof value === 'object') {
                     input.value = '';
                 } else {
                     input.value = String(value);
@@ -709,13 +753,26 @@
                         let rawValue = blockData[field.name];
 
                         if (rawValue === undefined || rawValue === null) {
-                            rawValue = field.default ?? '';
+                            rawValue = field.default ?? (field.type === 'repeater' ? [] : '');
                         }
 
-                        if (Array.isArray(rawValue)) {
-                            rawValue = rawValue.join('\n');
+                        if (field.type === 'repeater') {
+                            if (
+                                !Array.isArray(rawValue)
+                                && (!rawValue || typeof rawValue !== 'object')
+                            ) {
+                                rawValue = [];
+                            }
+                        } else if (field.type === 'list') {
+                            if (Array.isArray(rawValue)) {
+                                rawValue = rawValue.join('\n');
+                            } else {
+                                rawValue = String(rawValue);
+                            }
                         } else {
-                            rawValue = String(rawValue);
+                            rawValue = (rawValue && typeof rawValue === 'object')
+                                ? ''
+                                : String(rawValue);
                         }
 
                         fieldsWrap.appendChild(makeField(field, blockIndex, rawValue));

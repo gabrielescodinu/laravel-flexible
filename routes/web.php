@@ -17,6 +17,7 @@ Route::prefix('admin')
         Route::post('/pages', [PageBuilderController::class, 'store'])->name('pages.store');
         Route::get('/pages/{page}/edit', [PageBuilderController::class, 'edit'])->name('pages.edit');
         Route::put('/pages/{page}', [PageBuilderController::class, 'update'])->name('pages.update');
+        Route::post('/pages/{page}/revisions/{revision}/restore', [PageBuilderController::class, 'restore'])->name('pages.revisions.restore');
 
         Route::get('/media', [MediaController::class, 'index'])->name('media.index');
         Route::post('/media', [MediaController::class, 'store'])->name('media.store');

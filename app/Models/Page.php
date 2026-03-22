@@ -20,4 +20,9 @@ class Page extends Model
     {
         return $this->hasMany(PageBlock::class)->orderBy('sort_order');
     }
+
+    public function revisions(): HasMany
+    {
+        return $this->hasMany(PageRevision::class)->latest();
+    }
 }
