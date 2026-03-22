@@ -5,7 +5,7 @@
 @endphp
 
 @if (! empty($items))
-    <ul class="{{ $isRoot ? 'menu-principale flex items-center gap-1' : 'sub-menu absolute left-0 top-full z-20 mt-3 hidden min-w-56 space-y-1 rounded-2xl border border-white/15 bg-[#0b1220] p-2 text-left shadow-2xl group-hover:block group-focus-within:block' }}">
+    <ul class="{{ $isRoot ? 'menu-principale flex items-center gap-1' : 'sub-menu absolute left-0 top-full z-20 hidden min-w-56 space-y-1 rounded-2xl border border-white/15 bg-[#0b1220] p-2 pt-3 text-left shadow-2xl group-hover:block group-focus-within:block' }}">
         @foreach ($items as $item)
             @php
                 $itemUrl = (string) ($item['url'] ?? '#');
