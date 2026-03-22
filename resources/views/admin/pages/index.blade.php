@@ -14,7 +14,7 @@
         </div>
     </section>
 
-    <section class="panel">
+    <section class="panel mt-4">
         @if ($pages->isEmpty())
             <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
                 <p class="text-sm text-slate-500">Nessuna pagina disponibile.</p>

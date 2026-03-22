@@ -31,7 +31,7 @@
         </form>
     </section>
 
-    <section class="panel space-y-4">
+    <section class="panel space-y-4 mt-4">
         <form method="GET" action="{{ route('admin.media.index') }}" class="grid gap-3 md:grid-cols-[1fr_auto_auto_auto]">
             <div class="field">
                 <label class="field-label" for="search">Cerca file</label>
