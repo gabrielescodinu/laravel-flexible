@@ -81,7 +81,7 @@
                 <div class="flex items-center gap-2">
                     <a
                         href="{{ route('admin.pages.index') }}"
-                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg {{ request()->routeIs('admin.pages.*') ? 'bg-white/15' : 'hover:bg-white/10' }}"
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg {{ request()->routeIs('admin.pages.*', 'admin.menus.*') ? 'bg-white/15' : 'hover:bg-white/10' }}"
                     >
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                             <path d="M7 3.5h7l4 4v13H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z"></path>
@@ -154,6 +154,13 @@
                         >
                             <span>Cestino</span>
                             <span class="text-slate-400">{{ $trashedPages }}</span>
+                        </a>
+                        <a
+                            href="{{ route('admin.menus.edit') }}"
+                            class="col-span-2 flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.menus.*') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
+                        >
+                            <span>Menu visitatori</span>
+                            <span class="text-slate-400">↗</span>
                         </a>
                         <div class="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-slate-700">
                             <span>Published</span>
@@ -234,7 +241,7 @@
                 <nav class="flex flex-1 flex-col items-center gap-2">
                     <a
                         href="{{ route('admin.pages.index') }}"
-                        class="group relative inline-flex h-9 w-9 items-center justify-center rounded-lg transition {{ request()->routeIs('admin.pages.*') ? 'bg-white/20' : 'hover:bg-white/10' }}"
+                        class="group relative inline-flex h-9 w-9 items-center justify-center rounded-lg transition {{ request()->routeIs('admin.pages.*', 'admin.menus.*') ? 'bg-white/20' : 'hover:bg-white/10' }}"
                         aria-label="Sezione pagine"
                     >
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -340,6 +347,16 @@
                                 Nuova pagina
                             </span>
                             <span class="text-slate-400">+</span>
+                        </a>
+                        <a
+                            href="{{ route('admin.menus.edit') }}"
+                            class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.menus.*') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                        >
+                            <span class="inline-flex items-center gap-2">
+                                <span class="inline-block h-2 w-2 rounded-full bg-slate-400"></span>
+                                Menu visitatori
+                            </span>
+                            <span class="text-slate-400">↗</span>
                         </a>
                         <a
                             href="{{ route('admin.pages.trash') }}"

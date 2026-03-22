@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ArticleController as AdminArticleController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\MenuController as AdminMenuController;
 use App\Http\Controllers\Admin\PageBuilderController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\ArticleController as PublicArticleController;
@@ -35,6 +36,9 @@ Route::prefix('admin')
         Route::delete('/articles/{post}', [AdminArticleController::class, 'destroy'])->name('articles.destroy');
         Route::post('/articles/trash/{postId}/restore', [AdminArticleController::class, 'restoreFromTrash'])->name('articles.restore');
         Route::delete('/articles/trash/{postId}/force', [AdminArticleController::class, 'forceDeleteFromTrash'])->name('articles.force-delete');
+
+        Route::get('/menus', [AdminMenuController::class, 'edit'])->name('menus.edit');
+        Route::put('/menus', [AdminMenuController::class, 'update'])->name('menus.update');
 
         Route::get('/categories', [AdminCategoryController::class, 'index'])->name('categories.index');
         Route::post('/categories', [AdminCategoryController::class, 'store'])->name('categories.store');
