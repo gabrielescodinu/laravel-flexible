@@ -32,6 +32,11 @@ class ArticleAdminTest extends TestCase
             'excerpt' => 'Estratto breve',
             'content' => 'Contenuto completo del post',
             'featured_image' => '/storage/media/test.jpg',
+            'seo_title' => 'Primo articolo SEO',
+            'seo_description' => 'Meta description articolo',
+            'seo_keywords' => 'primo,articolo,blog',
+            'seo_robots' => 'index,follow',
+            'seo_canonical_url' => 'https://example.test/blog/news/primo-articolo',
             'category_ids' => [$category->id],
         ])->assertRedirect();
 
@@ -43,6 +48,11 @@ class ArticleAdminTest extends TestCase
 
         $this->assertSame('published', $post->status);
         $this->assertNotNull($post->published_at);
+        $this->assertSame('Primo articolo SEO', $post->seo_title);
+        $this->assertSame('Meta description articolo', $post->seo_description);
+        $this->assertSame('primo,articolo,blog', $post->seo_keywords);
+        $this->assertSame('index,follow', $post->seo_robots);
+        $this->assertSame('https://example.test/blog/news/primo-articolo', $post->seo_canonical_url);
         $this->assertDatabaseHas('category_post', [
             'post_id' => $post->id,
             'category_id' => $category->id,
@@ -89,6 +99,11 @@ class ArticleAdminTest extends TestCase
             'excerpt' => 'Nuovo estratto',
             'content' => 'Nuovo contenuto',
             'featured_image' => '/storage/media/new.jpg',
+            'seo_title' => 'Titolo aggiornato SEO',
+            'seo_description' => 'Descrizione SEO aggiornata',
+            'seo_keywords' => 'aggiornato,seo',
+            'seo_robots' => 'noindex,nofollow',
+            'seo_canonical_url' => 'https://example.test/blog/tech/titolo-aggiornato',
             'category_ids' => [$categoryB->id],
         ])->assertRedirect(route('admin.articles.edit', $post));
 
@@ -97,6 +112,11 @@ class ArticleAdminTest extends TestCase
         $this->assertSame('titolo-aggiornato', $post->slug);
         $this->assertSame('published', $post->status);
         $this->assertNotNull($post->published_at);
+        $this->assertSame('Titolo aggiornato SEO', $post->seo_title);
+        $this->assertSame('Descrizione SEO aggiornata', $post->seo_description);
+        $this->assertSame('aggiornato,seo', $post->seo_keywords);
+        $this->assertSame('noindex,nofollow', $post->seo_robots);
+        $this->assertSame('https://example.test/blog/tech/titolo-aggiornato', $post->seo_canonical_url);
         $this->assertDatabaseHas('category_post', [
             'post_id' => $post->id,
             'category_id' => $categoryB->id,

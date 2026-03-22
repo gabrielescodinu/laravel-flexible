@@ -24,6 +24,11 @@ class Post extends Model
         'featured_image',
         'status',
         'published_at',
+        'seo_title',
+        'seo_description',
+        'seo_keywords',
+        'seo_robots',
+        'seo_canonical_url',
     ];
 
     /**

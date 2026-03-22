@@ -1,9 +1,42 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+    @php
+        $seoPage = isset($page) && $page instanceof \App\Models\Page ? $page : null;
+        $seoPost = isset($post) && $post instanceof \App\Models\Post ? $post : null;
+        $seoEntity = $seoPage ?? $seoPost;
+
+        $sectionTitle = trim((string) $__env->yieldContent('title'));
+        $seoTitle = trim((string) ($seoEntity?->seo_title ?? ''));
+        if ($seoTitle === '') {
+            $seoTitle = $sectionTitle !== '' ? $sectionTitle : config('app.name');
+        }
+
+        $seoDescription = trim((string) ($seoEntity?->seo_description ?? $__env->yieldContent('meta_description')));
+        $seoKeywords = trim((string) ($seoEntity?->seo_keywords ?? ''));
+        $seoRobots = trim((string) ($seoEntity?->seo_robots ?? 'index,follow'));
+        $seoCanonicalUrl = trim((string) ($seoEntity?->seo_canonical_url ?? ''));
+
+        if ($seoRobots === '') {
+            $seoRobots = 'index,follow';
+        }
+
+        if ($seoCanonicalUrl === '') {
+            $seoCanonicalUrl = url()->current();
+        }
+    @endphp
+
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', config('app.name'))</title>
+    <title>{{ $seoTitle }}</title>
+    @if ($seoDescription !== '')
+        <meta name="description" content="{{ $seoDescription }}">
+    @endif
+    @if ($seoKeywords !== '')
+        <meta name="keywords" content="{{ $seoKeywords }}">
+    @endif
+    <meta name="robots" content="{{ $seoRobots }}">
+    <link rel="canonical" href="{{ $seoCanonicalUrl }}">
     @include('layouts.partials.assets')
 </head>
 <body>

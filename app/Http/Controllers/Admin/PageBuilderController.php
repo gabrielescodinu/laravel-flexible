@@ -144,7 +144,17 @@ class PageBuilderController extends Controller
             $snapshotTitle = trim((string) ($snapshotPage['title'] ?? $page->title));
             $snapshotSlug = trim((string) ($snapshotPage['slug'] ?? $page->slug));
             $snapshotStatus = (string) ($snapshotPage['status'] ?? $page->status);
+            $snapshotSeoTitle = trim((string) ($snapshotPage['seo_title'] ?? $page->seo_title));
+            $snapshotSeoDescription = trim((string) ($snapshotPage['seo_description'] ?? $page->seo_description));
+            $snapshotSeoKeywords = trim((string) ($snapshotPage['seo_keywords'] ?? $page->seo_keywords));
+            $snapshotSeoCanonicalUrl = trim((string) ($snapshotPage['seo_canonical_url'] ?? $page->seo_canonical_url));
+            $snapshotSeoRobots = trim((string) ($snapshotPage['seo_robots'] ?? $page->seo_robots));
             $resolvedStatus = in_array($snapshotStatus, ['draft', 'published'], true) ? $snapshotStatus : $page->status;
+            $resolvedSeoRobots = in_array($snapshotSeoRobots, ['index,follow', 'index,nofollow', 'noindex,follow', 'noindex,nofollow'], true)
+                ? $snapshotSeoRobots
+                : (($page->seo_robots && in_array($page->seo_robots, ['index,follow', 'index,nofollow', 'noindex,follow', 'noindex,nofollow'], true))
+                    ? $page->seo_robots
+                    : 'index,follow');
 
             $slugConflict = $snapshotSlug !== ''
                 && Page::query()
@@ -160,6 +170,11 @@ class PageBuilderController extends Controller
                 'title' => $snapshotTitle === '' ? (string) $page->title : $snapshotTitle,
                 'slug' => $resolvedSlug,
                 'status' => $resolvedStatus,
+                'seo_title' => $snapshotSeoTitle !== '' ? $snapshotSeoTitle : null,
+                'seo_description' => $snapshotSeoDescription !== '' ? $snapshotSeoDescription : null,
+                'seo_keywords' => $snapshotSeoKeywords !== '' ? $snapshotSeoKeywords : null,
+                'seo_robots' => $resolvedSeoRobots,
+                'seo_canonical_url' => $snapshotSeoCanonicalUrl !== '' ? $snapshotSeoCanonicalUrl : null,
             ]);
             $page->save();
 
@@ -217,6 +232,11 @@ class PageBuilderController extends Controller
                 Rule::unique('pages', 'slug')->ignore($page->id),
             ],
             'status' => ['required', Rule::in(['draft', 'published'])],
+            'seo_title' => ['nullable', 'string', 'max:255'],
+            'seo_description' => ['nullable', 'string', 'max:500'],
+            'seo_keywords' => ['nullable', 'string', 'max:500'],
+            'seo_robots' => ['nullable', Rule::in(['index,follow', 'index,nofollow', 'noindex,follow', 'noindex,nofollow'])],
+            'seo_canonical_url' => ['nullable', 'string', 'max:2048'],
             'blocks' => ['array'],
             'blocks.*.type' => ['required', Rule::in($registry->types())],
             'blocks.*.sort_order' => ['nullable', 'integer', 'min:0'],
@@ -232,6 +252,11 @@ class PageBuilderController extends Controller
                 'title' => $validated['title'],
                 'slug' => $validated['slug'],
                 'status' => $validated['status'],
+                'seo_title' => filled($validated['seo_title'] ?? null) ? $validated['seo_title'] : null,
+                'seo_description' => filled($validated['seo_description'] ?? null) ? $validated['seo_description'] : null,
+                'seo_keywords' => filled($validated['seo_keywords'] ?? null) ? $validated['seo_keywords'] : null,
+                'seo_robots' => $validated['seo_robots'] ?? 'index,follow',
+                'seo_canonical_url' => filled($validated['seo_canonical_url'] ?? null) ? $validated['seo_canonical_url'] : null,
             ]);
             $page->save();
 
@@ -290,6 +315,11 @@ class PageBuilderController extends Controller
                 'title' => (string) $page->title,
                 'slug' => (string) $page->slug,
                 'status' => (string) $page->status,
+                'seo_title' => (string) ($page->seo_title ?? ''),
+                'seo_description' => (string) ($page->seo_description ?? ''),
+                'seo_keywords' => (string) ($page->seo_keywords ?? ''),
+                'seo_robots' => (string) ($page->seo_robots ?? 'index,follow'),
+                'seo_canonical_url' => (string) ($page->seo_canonical_url ?? ''),
             ],
             'blocks' => $blocksSnapshot,
         ]);

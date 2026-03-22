@@ -64,4 +64,26 @@ class PublicPagesTest extends TestCase
         $this->get(route('pages.show', 'bozza'))
             ->assertNotFound();
     }
+
+    public function test_page_renders_custom_seo_meta_tags(): void
+    {
+        Page::query()->create([
+            'title' => 'Pagina SEO',
+            'slug' => 'pagina-seo',
+            'status' => 'published',
+            'seo_title' => 'Titolo SEO Pagina',
+            'seo_description' => 'Descrizione SEO della pagina',
+            'seo_keywords' => 'pagina,seo,test',
+            'seo_robots' => 'noindex,follow',
+            'seo_canonical_url' => 'https://example.test/pagina-seo-canonical',
+        ]);
+
+        $this->get(route('pages.show', 'pagina-seo'))
+            ->assertOk()
+            ->assertSee('<title>Titolo SEO Pagina</title>', false)
+            ->assertSee('<meta name="description" content="Descrizione SEO della pagina">', false)
+            ->assertSee('<meta name="keywords" content="pagina,seo,test">', false)
+            ->assertSee('<meta name="robots" content="noindex,follow">', false)
+            ->assertSee('<link rel="canonical" href="https://example.test/pagina-seo-canonical">', false);
+    }
 }

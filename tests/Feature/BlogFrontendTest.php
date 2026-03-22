@@ -160,4 +160,41 @@ class BlogFrontendTest extends TestCase
 
         Carbon::setTestNow();
     }
+
+    public function test_article_show_renders_custom_seo_meta_tags(): void
+    {
+        $author = User::factory()->create();
+        $category = Category::query()->create([
+            'name' => 'Marketing',
+            'slug' => 'marketing',
+            'description' => null,
+        ]);
+
+        $post = Post::query()->create([
+            'author_id' => $author->id,
+            'title' => 'Articolo SEO',
+            'slug' => 'articolo-seo',
+            'excerpt' => 'Estratto',
+            'content' => 'Contenuto',
+            'status' => 'published',
+            'published_at' => now()->subMinutes(10),
+            'seo_title' => 'Titolo SEO Articolo',
+            'seo_description' => 'Descrizione SEO articolo',
+            'seo_keywords' => 'articolo,seo,blog',
+            'seo_robots' => 'index,nofollow',
+            'seo_canonical_url' => 'https://example.test/blog/marketing/articolo-seo-canonical',
+        ]);
+        $post->categories()->sync([$category->id]);
+
+        $this->get(route('articles.show.category', [
+            'category' => $category->slug,
+            'post' => $post->slug,
+        ]))
+            ->assertOk()
+            ->assertSee('<title>Titolo SEO Articolo</title>', false)
+            ->assertSee('<meta name="description" content="Descrizione SEO articolo">', false)
+            ->assertSee('<meta name="keywords" content="articolo,seo,blog">', false)
+            ->assertSee('<meta name="robots" content="index,nofollow">', false)
+            ->assertSee('<link rel="canonical" href="https://example.test/blog/marketing/articolo-seo-canonical">', false);
+    }
 }

@@ -17,6 +17,11 @@ class Page extends Model
         'title',
         'slug',
         'status',
+        'seo_title',
+        'seo_description',
+        'seo_keywords',
+        'seo_robots',
+        'seo_canonical_url',
     ];
 
     public function blocks(): HasMany

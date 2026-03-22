@@ -20,6 +20,11 @@ class PageBuilderFeatureTest extends TestCase
             'title' => 'Homepage',
             'slug' => 'homepage',
             'status' => 'draft',
+            'seo_title' => 'Homepage SEO',
+            'seo_description' => 'Descrizione SEO homepage',
+            'seo_keywords' => 'home,landing,cms',
+            'seo_robots' => 'index,follow',
+            'seo_canonical_url' => 'https://example.test/homepage',
             'blocks' => [
                 [
                     'type' => 'hero',
@@ -56,12 +61,18 @@ class PageBuilderFeatureTest extends TestCase
         $page->load('blocks', 'revisions');
 
         $this->assertSame('Homepage', $page->title);
+        $this->assertSame('Homepage SEO', $page->seo_title);
+        $this->assertSame('Descrizione SEO homepage', $page->seo_description);
+        $this->assertSame('home,landing,cms', $page->seo_keywords);
+        $this->assertSame('index,follow', $page->seo_robots);
+        $this->assertSame('https://example.test/homepage', $page->seo_canonical_url);
         $this->assertCount(2, $page->blocks);
         $this->assertSame('stats_grid', $page->blocks[0]->type);
         $this->assertSame('Uno', $page->blocks[0]->data['stats_items'][0]['stat_title'] ?? null);
 
         $this->assertCount(1, $page->revisions);
         $this->assertSame('Creazione pagina', $page->revisions[0]->label);
+        $this->assertSame('Homepage SEO', $page->revisions[0]->page_data['seo_title'] ?? null);
     }
 
     public function test_admin_can_update_page_and_create_new_revision_snapshot(): void
@@ -98,6 +109,11 @@ class PageBuilderFeatureTest extends TestCase
             'title' => 'Pagina aggiornata',
             'slug' => 'pagina-aggiornata',
             'status' => 'published',
+            'seo_title' => 'Pagina aggiornata SEO',
+            'seo_description' => 'Descrizione SEO aggiornata',
+            'seo_keywords' => 'pagina,aggiornata,seo',
+            'seo_robots' => 'noindex,follow',
+            'seo_canonical_url' => 'https://example.test/pagina-aggiornata',
             'blocks' => [
                 [
                     'type' => 'features',
@@ -124,6 +140,11 @@ class PageBuilderFeatureTest extends TestCase
         $this->assertSame('Pagina aggiornata', $page->title);
         $this->assertSame('pagina-aggiornata', $page->slug);
         $this->assertSame('published', $page->status);
+        $this->assertSame('Pagina aggiornata SEO', $page->seo_title);
+        $this->assertSame('Descrizione SEO aggiornata', $page->seo_description);
+        $this->assertSame('pagina,aggiornata,seo', $page->seo_keywords);
+        $this->assertSame('noindex,follow', $page->seo_robots);
+        $this->assertSame('https://example.test/pagina-aggiornata', $page->seo_canonical_url);
         $this->assertCount(1, $page->blocks);
         $this->assertSame('features', $page->blocks[0]->type);
         $this->assertCount(2, $page->revisions);

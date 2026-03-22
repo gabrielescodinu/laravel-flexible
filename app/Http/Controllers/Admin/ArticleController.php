@@ -142,6 +142,11 @@ class ArticleController extends Controller
             'featured_image' => ['nullable', 'string', 'max:2048'],
             'status' => ['required', Rule::in(['draft', 'published'])],
             'published_at' => ['nullable', 'date'],
+            'seo_title' => ['nullable', 'string', 'max:255'],
+            'seo_description' => ['nullable', 'string', 'max:500'],
+            'seo_keywords' => ['nullable', 'string', 'max:500'],
+            'seo_robots' => ['nullable', Rule::in(['index,follow', 'index,nofollow', 'noindex,follow', 'noindex,nofollow'])],
+            'seo_canonical_url' => ['nullable', 'string', 'max:2048'],
             'category_ids' => ['array'],
             'category_ids.*' => ['integer', 'exists:categories,id'],
         ]);
@@ -169,6 +174,11 @@ class ArticleController extends Controller
                 'featured_image' => $validated['featured_image'] ?? null,
                 'status' => $validated['status'],
                 'published_at' => $publishedAt,
+                'seo_title' => filled($validated['seo_title'] ?? null) ? $validated['seo_title'] : null,
+                'seo_description' => filled($validated['seo_description'] ?? null) ? $validated['seo_description'] : null,
+                'seo_keywords' => filled($validated['seo_keywords'] ?? null) ? $validated['seo_keywords'] : null,
+                'seo_robots' => $validated['seo_robots'] ?? 'index,follow',
+                'seo_canonical_url' => filled($validated['seo_canonical_url'] ?? null) ? $validated['seo_canonical_url'] : null,
             ]);
             $post->save();
 
