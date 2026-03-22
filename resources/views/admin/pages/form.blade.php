@@ -213,6 +213,19 @@
             let draggingCard = null;
             let blockCounter = 0;
 
+            async function requestDeleteConfirmation(options = {}) {
+                if (typeof window.adminConfirm === 'function') {
+                    return window.adminConfirm({
+                        title: options.title || 'Conferma eliminazione',
+                        message: options.message || 'Questa azione non puo essere annullata.',
+                        confirmLabel: options.confirmLabel || 'Elimina',
+                        variant: options.variant || 'danger',
+                    });
+                }
+
+                return window.confirm(options.message || 'Confermi questa eliminazione?');
+            }
+
             function makeButton(label, variant = 'secondary') {
                 const button = document.createElement('button');
                 button.type = 'button';
@@ -637,7 +650,17 @@
                             }
                         });
 
-                        removeItemButton.addEventListener('click', () => {
+                        removeItemButton.addEventListener('click', async () => {
+                            const confirmed = await requestDeleteConfirmation({
+                                title: 'Rimuovi card',
+                                message: 'Vuoi rimuovere questa card dal blocco?',
+                                confirmLabel: 'Rimuovi',
+                            });
+
+                            if (!confirmed) {
+                                return;
+                            }
+
                             itemCard.remove();
                             [...itemsContainer.children].forEach((child, idx) => {
                                 const titleNode = child.querySelector('p');
@@ -854,7 +877,17 @@
                     setCollapsed(card, !isCollapsed);
                 });
 
-                remove.addEventListener('click', () => {
+                remove.addEventListener('click', async () => {
+                    const confirmed = await requestDeleteConfirmation({
+                        title: 'Rimuovi blocco',
+                        message: 'Vuoi rimuovere questo blocco dalla pagina?',
+                        confirmLabel: 'Rimuovi',
+                    });
+
+                    if (!confirmed) {
+                        return;
+                    }
+
                     card.remove();
                     updateSortOrders();
                 });

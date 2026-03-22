@@ -67,7 +67,14 @@
                                         @if ($post->status === 'published')
                                             <a class="btn btn-secondary" href="{{ $post->public_url }}" target="_blank" rel="noopener">Apri</a>
                                         @endif
-                                        <form action="{{ route('admin.articles.destroy', $post) }}" method="POST" onsubmit="return confirm('Eliminare questo articolo?')">
+                                        <form
+                                            action="{{ route('admin.articles.destroy', $post) }}"
+                                            method="POST"
+                                            data-confirm-title="Elimina articolo"
+                                            data-confirm-message="Vuoi eliminare questo articolo? Questa azione non puo essere annullata."
+                                            data-confirm-label="Elimina"
+                                            data-confirm-variant="danger"
+                                        >
                                             @csrf
                                             @method('DELETE')
                                             <button class="btn btn-danger" type="submit">Elimina</button>

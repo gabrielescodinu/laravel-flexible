@@ -36,7 +36,14 @@
                             <p class="text-xs text-slate-500">{{ $category->posts_count }} articoli assegnati</p>
                         </div>
 
-                        <form action="{{ route('admin.categories.destroy', $category) }}" method="POST" onsubmit="return confirm('Eliminare questa categoria?')">
+                        <form
+                            action="{{ route('admin.categories.destroy', $category) }}"
+                            method="POST"
+                            data-confirm-title="Elimina categoria"
+                            data-confirm-message="Vuoi eliminare questa categoria? Questa azione non puo essere annullata."
+                            data-confirm-label="Elimina"
+                            data-confirm-variant="danger"
+                        >
                             @csrf
                             @method('DELETE')
                             <button class="btn btn-danger" type="submit">Elimina</button>

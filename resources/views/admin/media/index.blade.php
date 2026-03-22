@@ -78,7 +78,14 @@
                             <div class="flex flex-wrap gap-2">
                                 <a href="{{ $item->url }}" target="_blank" rel="noopener" class="btn btn-secondary">Apri</a>
                                 <button type="button" class="btn btn-secondary" data-copy-url="{{ $item->url }}">Copia URL</button>
-                                <form action="{{ route('admin.media.destroy', $item) }}" method="POST" onsubmit="return confirm('Eliminare questo file?')">
+                                <form
+                                    action="{{ route('admin.media.destroy', $item) }}"
+                                    method="POST"
+                                    data-confirm-title="Elimina file"
+                                    data-confirm-message="Vuoi eliminare questo file? Questa azione non puo essere annullata."
+                                    data-confirm-label="Elimina"
+                                    data-confirm-variant="danger"
+                                >
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-danger">Elimina</button>

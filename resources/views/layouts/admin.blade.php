@@ -425,5 +425,121 @@
             </section>
         </div>
     </main>
+
+    <div
+        class="fixed inset-0 z-[95] hidden items-center justify-center bg-black/45 p-4"
+        data-confirm-modal
+        aria-hidden="true"
+    >
+        <div class="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div class="border-b border-slate-200 px-5 py-4">
+                <h3 class="text-base font-semibold text-slate-900" data-confirm-title>Conferma eliminazione</h3>
+                <p class="mt-1 text-sm text-slate-600" data-confirm-message>Questa azione non puo essere annullata.</p>
+            </div>
+            <div class="flex items-center justify-end gap-2 px-5 py-4">
+                <button type="button" class="btn btn-secondary" data-confirm-cancel>Annulla</button>
+                <button type="button" class="btn btn-danger" data-confirm-accept>Elimina</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (() => {
+            const modal = document.querySelector('[data-confirm-modal]');
+            const titleNode = modal?.querySelector('[data-confirm-title]');
+            const messageNode = modal?.querySelector('[data-confirm-message]');
+            const cancelButton = modal?.querySelector('[data-confirm-cancel]');
+            const acceptButton = modal?.querySelector('[data-confirm-accept]');
+
+            if (!modal || !titleNode || !messageNode || !cancelButton || !acceptButton) {
+                return;
+            }
+
+            let resolver = null;
+
+            const cleanup = () => {
+                document.removeEventListener('keydown', onEscape);
+            };
+
+            const closeModal = (confirmed) => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                modal.setAttribute('aria-hidden', 'true');
+                cleanup();
+
+                if (resolver) {
+                    const currentResolver = resolver;
+                    resolver = null;
+                    currentResolver(Boolean(confirmed));
+                }
+            };
+
+            const onEscape = (event) => {
+                if (event.key === 'Escape') {
+                    closeModal(false);
+                }
+            };
+
+            window.adminConfirm = (options = {}) => {
+                const title = String(options.title || 'Conferma eliminazione');
+                const message = String(options.message || 'Questa azione non puo essere annullata.');
+                const confirmLabel = String(options.confirmLabel || 'Elimina');
+
+                titleNode.textContent = title;
+                messageNode.textContent = message;
+                acceptButton.textContent = confirmLabel;
+
+                const isDanger = options.variant !== 'secondary';
+                acceptButton.className = `btn ${isDanger ? 'btn-danger' : 'btn-primary'}`;
+
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                modal.setAttribute('aria-hidden', 'false');
+
+                document.addEventListener('keydown', onEscape);
+
+                return new Promise((resolve) => {
+                    resolver = resolve;
+                });
+            };
+
+            cancelButton.addEventListener('click', () => closeModal(false));
+            acceptButton.addEventListener('click', () => closeModal(true));
+
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    closeModal(false);
+                }
+            });
+
+            document.addEventListener('submit', async (event) => {
+                const form = event.target;
+                if (!(form instanceof HTMLFormElement)) {
+                    return;
+                }
+
+                const message = form.getAttribute('data-confirm-message');
+                if (!message || form.dataset.confirmedSubmit === '1') {
+                    return;
+                }
+
+                event.preventDefault();
+
+                const confirmed = await window.adminConfirm({
+                    title: form.getAttribute('data-confirm-title') || 'Conferma eliminazione',
+                    message,
+                    confirmLabel: form.getAttribute('data-confirm-label') || 'Elimina',
+                    variant: form.getAttribute('data-confirm-variant') || 'danger',
+                });
+
+                if (!confirmed) {
+                    return;
+                }
+
+                form.dataset.confirmedSubmit = '1';
+                HTMLFormElement.prototype.submit.call(form);
+            });
+        })();
+    </script>
 </body>
 </html>
