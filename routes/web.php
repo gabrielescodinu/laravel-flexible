@@ -52,6 +52,7 @@ Route::middleware('auth')->group(function (): void {
 
 Route::get('/blog', [PublicArticleController::class, 'index'])->name('articles.index');
 Route::get('/blog/categoria/{category:slug}', [PublicArticleController::class, 'byCategory'])->name('articles.category');
+Route::get('/blog/{category:slug}/{post:slug}', [PublicArticleController::class, 'showByCategory'])->name('articles.show.category');
 Route::get('/blog/{post:slug}', [PublicArticleController::class, 'show'])->name('articles.show');
 
 Route::get('/', [PageController::class, 'home'])->name('pages.home');

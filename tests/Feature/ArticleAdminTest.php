@@ -48,7 +48,10 @@ class ArticleAdminTest extends TestCase
             'category_id' => $category->id,
         ]);
 
-        $this->get(route('articles.show', $post->slug))
+        $this->get(route('articles.show.category', [
+            'category' => $category->slug,
+            'post' => $post->slug,
+        ]))
             ->assertOk()
             ->assertSee('Primo articolo');
     }

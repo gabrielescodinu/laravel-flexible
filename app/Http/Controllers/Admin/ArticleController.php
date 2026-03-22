@@ -50,7 +50,7 @@ class ArticleController extends Controller
 
     public function edit(Post $post): View
     {
-        $post->load('categories:id');
+        $post->load('categories:id,name,slug');
         $selectedCategoryIds = $post->categories
             ->pluck('id')
             ->map(static fn (mixed $id): int => (int) $id)

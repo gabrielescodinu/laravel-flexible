@@ -65,7 +65,7 @@
                                     <div class="flex flex-wrap gap-2">
                                         <a class="btn btn-secondary" href="{{ route('admin.articles.edit', $post) }}">Modifica</a>
                                         @if ($post->status === 'published')
-                                            <a class="btn btn-secondary" href="{{ route('articles.show', $post->slug) }}" target="_blank" rel="noopener">Apri</a>
+                                            <a class="btn btn-secondary" href="{{ $post->public_url }}" target="_blank" rel="noopener">Apri</a>
                                         @endif
                                         <form action="{{ route('admin.articles.destroy', $post) }}" method="POST" onsubmit="return confirm('Eliminare questo articolo?')">
                                             @csrf

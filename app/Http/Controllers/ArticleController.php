@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Post;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Schema;
 
 class ArticleController extends Controller
@@ -69,14 +70,44 @@ class ArticleController extends Controller
         ]);
     }
 
-    public function show(Post $post): View
+    public function show(Post $post): View|RedirectResponse
     {
-        if ($post->status !== 'published' || ($post->published_at !== null && $post->published_at->isFuture())) {
+        $post->load('categories:id,name,slug');
+        $this->ensurePostIsPubliclyVisible($post);
+
+        $primaryCategory = $post->primaryCategory();
+        if ($primaryCategory !== null) {
+            return redirect()->route('articles.show.category', [
+                'category' => $primaryCategory->slug,
+                'post' => $post->slug,
+            ], 301);
+        }
+
+        return $this->renderPost($post);
+    }
+
+    public function showByCategory(Category $category, Post $post): View|RedirectResponse
+    {
+        $post->load('categories:id,name,slug');
+        $this->ensurePostIsPubliclyVisible($post);
+
+        if (! $post->categories->contains(static fn (Category $assignedCategory): bool => $assignedCategory->id === $category->id)) {
             throw new ModelNotFoundException();
         }
 
-        $post->load('categories:id,name,slug');
+        $primaryCategory = $post->primaryCategory();
+        if ($primaryCategory !== null && $primaryCategory->id !== $category->id) {
+            return redirect()->route('articles.show.category', [
+                'category' => $primaryCategory->slug,
+                'post' => $post->slug,
+            ], 301);
+        }
 
+        return $this->renderPost($post);
+    }
+
+    private function renderPost(Post $post): View
+    {
         $relatedPosts = Post::query()
             ->published()
             ->whereKeyNot($post->id)
@@ -90,6 +121,13 @@ class ArticleController extends Controller
             'post' => $post,
             'relatedPosts' => $relatedPosts,
         ]);
+    }
+
+    private function ensurePostIsPubliclyVisible(Post $post): void
+    {
+        if ($post->status !== 'published' || ($post->published_at !== null && $post->published_at->isFuture())) {
+            throw new ModelNotFoundException();
+        }
     }
 
     private function blogTablesReady(): bool

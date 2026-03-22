@@ -42,7 +42,7 @@
         @forelse ($posts as $post)
             <article class="panel p-0 overflow-hidden">
                 @if ($post->featured_image)
-                    <a href="{{ route('articles.show', $post->slug) }}" class="block h-44 bg-slate-100">
+                    <a href="{{ $post->public_url }}" class="block h-44 bg-slate-100">
                         <img src="{{ $post->featured_image }}" alt="{{ $post->title }}" class="h-full w-full object-cover">
                     </a>
                 @endif
@@ -57,14 +57,14 @@
                     </div>
 
                     <h2 class="text-xl font-semibold text-slate-900">
-                        <a href="{{ route('articles.show', $post->slug) }}" class="hover:text-slate-600">{{ $post->title }}</a>
+                        <a href="{{ $post->public_url }}" class="hover:text-slate-600">{{ $post->title }}</a>
                     </h2>
 
                     <p class="muted line-clamp-3">{{ $post->excerpt ?: \Illuminate\Support\Str::limit(strip_tags((string) $post->content), 130) }}</p>
 
                     <div class="flex items-center justify-between">
                         <span class="text-xs text-slate-400">{{ $post->published_at?->format('d/m/Y') ?: '-' }}</span>
-                        <a href="{{ route('articles.show', $post->slug) }}" class="btn btn-secondary">Leggi</a>
+                        <a href="{{ $post->public_url }}" class="btn btn-secondary">Leggi</a>
                     </div>
                 </div>
             </article>

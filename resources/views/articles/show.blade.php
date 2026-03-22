@@ -43,7 +43,7 @@
                 <h2 class="text-xl font-semibold text-slate-900">Articoli correlati</h2>
                 <div class="mt-4 grid gap-3 md:grid-cols-3">
                     @foreach ($relatedPosts as $relatedPost)
-                        <a href="{{ route('articles.show', $relatedPost->slug) }}" class="rounded-xl border border-slate-200 bg-white p-3 hover:border-slate-300">
+                        <a href="{{ $relatedPost->public_url }}" class="rounded-xl border border-slate-200 bg-white p-3 hover:border-slate-300">
                             <p class="text-sm font-semibold text-slate-900">{{ $relatedPost->title }}</p>
                             <p class="mt-1 text-xs text-slate-400">{{ $relatedPost->published_at?->format('d/m/Y') ?: '-' }}</p>
                         </a>

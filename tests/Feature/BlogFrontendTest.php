@@ -117,6 +117,15 @@ class BlogFrontendTest extends TestCase
         ]);
 
         $this->get(route('articles.show', $publishedPost->slug))
+            ->assertRedirect(route('articles.show.category', [
+                'category' => $category->slug,
+                'post' => $publishedPost->slug,
+            ]));
+
+        $this->get(route('articles.show.category', [
+            'category' => $category->slug,
+            'post' => $publishedPost->slug,
+        ]))
             ->assertOk()
             ->assertSee('Articolo pubblico');
 
@@ -125,6 +134,29 @@ class BlogFrontendTest extends TestCase
 
         $this->get(route('articles.show', $futurePost->slug))
             ->assertNotFound();
+
+        Carbon::setTestNow();
+    }
+
+    public function test_uncategorized_article_uses_slug_only_url(): void
+    {
+        Carbon::setTestNow('2026-03-22 15:00:00');
+
+        $author = User::factory()->create();
+
+        $post = Post::query()->create([
+            'author_id' => $author->id,
+            'title' => 'Articolo senza categoria',
+            'slug' => 'articolo-senza-categoria',
+            'excerpt' => null,
+            'content' => 'Contenuto pubblico',
+            'status' => 'published',
+            'published_at' => now()->subHour(),
+        ]);
+
+        $this->get(route('articles.show', $post->slug))
+            ->assertOk()
+            ->assertSee('Articolo senza categoria');
 
         Carbon::setTestNow();
     }

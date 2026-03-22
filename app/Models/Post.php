@@ -50,4 +50,35 @@ class Post extends Model
                     ->orWhere('published_at', '<=', now());
             });
     }
+
+    public function primaryCategory(): ?Category
+    {
+        if ($this->relationLoaded('categories')) {
+            $loadedCategory = $this->categories->first();
+
+            if ($loadedCategory !== null && filled($loadedCategory->slug)) {
+                return $loadedCategory;
+            }
+        }
+
+        return $this->categories()
+            ->select(['categories.id', 'categories.name', 'categories.slug'])
+            ->first();
+    }
+
+    public function getPublicUrlAttribute(): string
+    {
+        $primaryCategory = $this->primaryCategory();
+
+        if ($primaryCategory !== null) {
+            return route('articles.show.category', [
+                'category' => $primaryCategory->slug,
+                'post' => $this->slug,
+            ]);
+        }
+
+        return route('articles.show', [
+            'post' => $this->slug,
+        ]);
+    }
 }

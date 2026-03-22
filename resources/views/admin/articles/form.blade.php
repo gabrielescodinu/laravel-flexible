@@ -127,7 +127,7 @@
         <div class="flex flex-wrap gap-2">
             <button type="submit" class="btn btn-primary">{{ $submitLabel }}</button>
             @if ($post->exists && $post->status === 'published')
-                <a class="btn btn-secondary" href="{{ route('articles.show', $post->slug) }}" target="_blank" rel="noopener">Apri articolo</a>
+                <a class="btn btn-secondary" href="{{ $post->public_url }}" target="_blank" rel="noopener">Apri articolo</a>
             @endif
         </div>
     </form>
