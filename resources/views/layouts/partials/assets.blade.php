@@ -91,3 +91,6 @@
         }
     </style>
 @endif
+
+<script src="{{ asset('vendor/vue.global.prod.js') }}" defer></script>
+<script src="{{ asset('js/cart-realtime-standalone.js') }}" defer></script>

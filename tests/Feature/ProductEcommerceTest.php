@@ -134,4 +134,40 @@ class ProductEcommerceTest extends TestCase
             ->get(route('admin.settings.edit'))
             ->assertForbidden();
     }
+
+    public function test_cart_page_exposes_valid_json_state_for_vue(): void
+    {
+        $admin = User::factory()->create();
+        $product = Product::query()->create([
+            'title' => 'Speaker Mini',
+            'slug' => 'speaker-mini',
+            'description' => 'Speaker portatile',
+            'featured_image' => null,
+            'price' => '59.00',
+            'status' => 'published',
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('admin.settings.update'), [
+                'ecommerce_enabled' => '1',
+            ])
+            ->assertRedirect(route('admin.settings.edit'));
+
+        $this->post(route('cart.add', ['product' => $product->id]), [
+            'quantity' => 1,
+        ])->assertRedirect(route('cart.index'));
+
+        $response = $this->get(route('cart.index'))->assertOk();
+        $content = $response->getContent();
+
+        $this->assertIsString($content);
+        preg_match("/data-cart-state='([^']+)'/", $content, $matches);
+
+        $this->assertArrayHasKey(1, $matches);
+
+        $payload = json_decode($matches[1], true);
+        $this->assertIsArray($payload);
+        $this->assertArrayHasKey('items', $payload);
+        $this->assertNotEmpty($payload['items']);
+    }
 }

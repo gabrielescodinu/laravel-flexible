@@ -28,6 +28,7 @@
 
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $seoTitle }}</title>
     @if ($seoDescription !== '')
         <meta name="description" content="{{ $seoDescription }}">
@@ -151,7 +152,7 @@
                             class="ml-4 inline-flex h-10 items-center gap-2 rounded-full border border-white/20 px-3 text-sm font-semibold text-white transition hover:bg-white/10"
                         >
                             <span>Carrello</span>
-                            <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1 text-[11px]">{{ $cartItemCount }}</span>
+                            <span data-cart-count-badge class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1 text-[11px]">{{ $cartItemCount }}</span>
                         </a>
                     @endif
 
@@ -190,7 +191,7 @@
                         @if ($ecommerceEnabled)
                             <a href="{{ route('cart.index') }}" class="mb-4 inline-flex items-center gap-2 rounded-xl border border-white/20 px-3 py-2 text-sm font-semibold">
                                 <span>Carrello</span>
-                                <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1 text-[11px]">{{ $cartItemCount }}</span>
+                                <span data-cart-count-badge class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1 text-[11px]">{{ $cartItemCount }}</span>
                             </a>
                         @endif
 

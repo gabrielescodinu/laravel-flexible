@@ -39,11 +39,31 @@
                     </div>
 
                     @if ($ecommerceEnabled)
-                        <form method="POST" action="{{ route('cart.add', ['product' => $product->id]) }}">
-                            @csrf
-                            <input type="hidden" name="quantity" value="1">
-                            <button class="btn btn-primary w-full" type="submit">Aggiungi al carrello</button>
-                        </form>
+                        <div
+                            class="space-y-2"
+                            data-vue-cart-add
+                            data-endpoint="{{ route('cart.add', ['product' => $product->id]) }}"
+                            data-default-quantity="1"
+                            data-product-title="{{ $product->title }}"
+                        >
+                            <form method="POST" action="{{ route('cart.add', ['product' => $product->id]) }}" @submit.prevent="submit">
+                                @csrf
+                                <input type="hidden" v-model.number="quantity">
+                                <button class="btn btn-primary w-full" type="submit" :disabled="loading">
+                                    <span v-if="loading">Aggiungo...</span>
+                                    <span v-else>Aggiungi al carrello</span>
+                                </button>
+                            </form>
+                            <p v-if="message" class="text-xs" :class="error ? 'text-rose-600' : 'text-emerald-700'" aria-live="polite">@{{ message }}</p>
+                        </div>
+
+                        <noscript>
+                            <form method="POST" action="{{ route('cart.add', ['product' => $product->id]) }}">
+                                @csrf
+                                <input type="hidden" name="quantity" value="1">
+                                <button class="btn btn-primary w-full" type="submit">Aggiungi al carrello</button>
+                            </form>
+                        </noscript>
                     @endif
                 </div>
             </article>

@@ -5,52 +5,34 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\SiteSetting;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|JsonResponse
     {
         $this->ensureEcommerceEnabled();
 
-        $cartItems = $this->cartItems($request);
-        $productIds = array_map('intval', array_keys($cartItems));
+        $snapshot = $this->buildCartSnapshot($request);
+        $items = $snapshot['items'];
+        $total = $snapshot['total'];
 
-        $products = Product::query()
-            ->whereIn('id', $productIds)
-            ->where('status', 'published')
-            ->get()
-            ->keyBy('id');
-
-        $items = [];
-        $total = 0.0;
-
-        foreach ($cartItems as $productId => $quantity) {
-            $product = $products->get((int) $productId);
-            if (! $product) {
-                continue;
-            }
-
-            $qty = max(1, (int) $quantity);
-            $lineTotal = (float) $product->price * $qty;
-
-            $items[] = [
-                'product' => $product,
-                'quantity' => $qty,
-                'line_total' => $lineTotal,
-            ];
-
-            $total += $lineTotal;
+        if ($this->wantsJson($request)) {
+            return response()->json([
+                'cart' => $this->cartJsonPayload($snapshot),
+            ]);
         }
 
         return view('cart.index', [
             'items' => $items,
             'total' => $total,
+            'cartSnapshot' => $this->cartJsonPayload($snapshot),
         ]);
     }
 
-    public function add(Request $request, Product $product): RedirectResponse
+    public function add(Request $request, Product $product): RedirectResponse|JsonResponse
     {
         $this->ensureEcommerceEnabled();
         $this->ensurePurchasable($product);
@@ -66,12 +48,19 @@ class CartController extends Controller
         $cartItems[$product->id] = min(99, $current + $quantity);
         $this->storeCartItems($request, $cartItems);
 
+        if ($this->wantsJson($request)) {
+            return response()->json([
+                'message' => 'Prodotto aggiunto al carrello.',
+                'cart' => $this->cartJsonPayload($this->buildCartSnapshot($request)),
+            ]);
+        }
+
         return redirect()
             ->route('cart.index')
             ->with('success', 'Prodotto aggiunto al carrello.');
     }
 
-    public function update(Request $request, Product $product): RedirectResponse
+    public function update(Request $request, Product $product): RedirectResponse|JsonResponse
     {
         $this->ensureEcommerceEnabled();
         $this->ensurePurchasable($product);
@@ -84,12 +73,19 @@ class CartController extends Controller
         $cartItems[$product->id] = (int) $validated['quantity'];
         $this->storeCartItems($request, $cartItems);
 
+        if ($this->wantsJson($request)) {
+            return response()->json([
+                'message' => 'Quantita aggiornata.',
+                'cart' => $this->cartJsonPayload($this->buildCartSnapshot($request)),
+            ]);
+        }
+
         return redirect()
             ->route('cart.index')
             ->with('success', 'Quantita aggiornata.');
     }
 
-    public function remove(Request $request, Product $product): RedirectResponse
+    public function remove(Request $request, Product $product): RedirectResponse|JsonResponse
     {
         $this->ensureEcommerceEnabled();
 
@@ -97,16 +93,30 @@ class CartController extends Controller
         unset($cartItems[$product->id]);
         $this->storeCartItems($request, $cartItems);
 
+        if ($this->wantsJson($request)) {
+            return response()->json([
+                'message' => 'Prodotto rimosso dal carrello.',
+                'cart' => $this->cartJsonPayload($this->buildCartSnapshot($request)),
+            ]);
+        }
+
         return redirect()
             ->route('cart.index')
             ->with('success', 'Prodotto rimosso dal carrello.');
     }
 
-    public function clear(Request $request): RedirectResponse
+    public function clear(Request $request): RedirectResponse|JsonResponse
     {
         $this->ensureEcommerceEnabled();
 
         $this->storeCartItems($request, []);
+
+        if ($this->wantsJson($request)) {
+            return response()->json([
+                'message' => 'Carrello svuotato.',
+                'cart' => $this->cartJsonPayload($this->buildCartSnapshot($request)),
+            ]);
+        }
 
         return redirect()
             ->route('cart.index')
@@ -153,5 +163,109 @@ class CartController extends Controller
         if ($product->status !== 'published') {
             abort(404);
         }
+    }
+
+    private function wantsJson(Request $request): bool
+    {
+        return $request->expectsJson() || $request->wantsJson() || $request->ajax();
+    }
+
+    /**
+     * @return array{items: array<int, array{product: Product, quantity: int, line_total: float}>, total: float}
+     */
+    private function buildCartSnapshot(Request $request): array
+    {
+        $cartItems = $this->cartItems($request);
+        $productIds = array_map('intval', array_keys($cartItems));
+
+        $products = Product::query()
+            ->whereIn('id', $productIds)
+            ->where('status', 'published')
+            ->get()
+            ->keyBy('id');
+
+        $items = [];
+        $total = 0.0;
+
+        foreach ($cartItems as $productId => $quantity) {
+            $product = $products->get((int) $productId);
+            if (! $product) {
+                continue;
+            }
+
+            $qty = max(1, (int) $quantity);
+            $lineTotal = (float) $product->price * $qty;
+
+            $items[] = [
+                'product' => $product,
+                'quantity' => $qty,
+                'line_total' => $lineTotal,
+            ];
+
+            $total += $lineTotal;
+        }
+
+        return [
+            'items' => $items,
+            'total' => $total,
+        ];
+    }
+
+    /**
+     * @param  array{items: array<int, array{product: Product, quantity: int, line_total: float}>, total: float}  $snapshot
+     * @return array{
+     *     items: array<int, array{
+     *         product_id: int,
+     *         title: string,
+     *         url: string,
+     *         featured_image: ?string,
+     *         price: float,
+     *         price_formatted: string,
+     *         quantity: int,
+     *         line_total: float,
+     *         line_total_formatted: string
+     *     }>,
+     *     total: float,
+     *     total_formatted: string,
+     *     cart_count: int
+     * }
+     */
+    private function cartJsonPayload(array $snapshot): array
+    {
+        $items = collect($snapshot['items'])
+            ->map(function (array $item): array {
+                $product = $item['product'];
+                $price = (float) $product->price;
+                $lineTotal = (float) $item['line_total'];
+
+                return [
+                    'product_id' => (int) $product->id,
+                    'title' => (string) $product->title,
+                    'url' => (string) $product->public_url,
+                    'featured_image' => $product->featured_image ? (string) $product->featured_image : null,
+                    'price' => $price,
+                    'price_formatted' => $this->formatPrice($price),
+                    'quantity' => (int) $item['quantity'],
+                    'line_total' => $lineTotal,
+                    'line_total_formatted' => $this->formatPrice($lineTotal),
+                ];
+            })
+            ->values()
+            ->all();
+
+        $cartCount = (int) collect($items)->sum(static fn (array $item): int => (int) $item['quantity']);
+        $total = (float) $snapshot['total'];
+
+        return [
+            'items' => $items,
+            'total' => $total,
+            'total_formatted' => $this->formatPrice($total),
+            'cart_count' => $cartCount,
+        ];
+    }
+
+    private function formatPrice(float $value): string
+    {
+        return '€ '.number_format($value, 2, ',', '.');
     }
 }

@@ -27,19 +27,39 @@
                     </div>
 
                     @if ($ecommerceEnabled)
-                        <form method="POST" action="{{ route('cart.add', ['product' => $product->id]) }}" class="flex flex-wrap items-center gap-2">
-                            @csrf
-                            <input
-                                class="field-input max-w-28"
-                                type="number"
-                                name="quantity"
-                                value="1"
-                                min="1"
-                                max="99"
-                            >
-                            <button class="btn btn-primary" type="submit">Aggiungi al carrello</button>
-                            <a class="btn btn-secondary" href="{{ route('cart.index') }}">Vai al carrello</a>
-                        </form>
+                        <div
+                            class="space-y-2"
+                            data-vue-cart-add
+                            data-endpoint="{{ route('cart.add', ['product' => $product->id]) }}"
+                            data-default-quantity="1"
+                            data-product-title="{{ $product->title }}"
+                        >
+                            <form method="POST" action="{{ route('cart.add', ['product' => $product->id]) }}" @submit.prevent="submit" class="flex flex-wrap items-center gap-2">
+                                @csrf
+                                <input
+                                    class="field-input max-w-28"
+                                    type="number"
+                                    v-model.number="quantity"
+                                    min="1"
+                                    max="99"
+                                >
+                                <button class="btn btn-primary" type="submit" :disabled="loading">
+                                    <span v-if="loading">Aggiungo...</span>
+                                    <span v-else>Aggiungi al carrello</span>
+                                </button>
+                                <a class="btn btn-secondary" href="{{ route('cart.index') }}">Vai al carrello</a>
+                            </form>
+                            <p v-if="message" class="text-xs" :class="error ? 'text-rose-600' : 'text-emerald-700'" aria-live="polite">@{{ message }}</p>
+                        </div>
+
+                        <noscript>
+                            <form method="POST" action="{{ route('cart.add', ['product' => $product->id]) }}" class="flex flex-wrap items-center gap-2">
+                                @csrf
+                                <input class="field-input max-w-28" type="number" name="quantity" value="1" min="1" max="99">
+                                <button class="btn btn-primary" type="submit">Aggiungi al carrello</button>
+                                <a class="btn btn-secondary" href="{{ route('cart.index') }}">Vai al carrello</a>
+                            </form>
+                        </noscript>
                     @else
                         <p class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
                             Ecommerce disattivato: acquisto momentaneamente non disponibile.
