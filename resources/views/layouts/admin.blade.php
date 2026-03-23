@@ -20,6 +20,15 @@
         $imageMedia = 0;
         $documentMedia = 0;
         $trashedPages = 0;
+        $totalUsers = 0;
+        $currentUser = auth()->user();
+
+        $canManagePages = $currentUser?->hasPermission(\App\Support\Access\Permissions::MANAGE_PAGES) ?? false;
+        $canManageArticles = $currentUser?->hasPermission(\App\Support\Access\Permissions::MANAGE_ARTICLES) ?? false;
+        $canManageCategories = $currentUser?->hasPermission(\App\Support\Access\Permissions::MANAGE_CATEGORIES) ?? false;
+        $canManageMedia = $currentUser?->hasPermission(\App\Support\Access\Permissions::MANAGE_MEDIA) ?? false;
+        $canManageMenus = $currentUser?->hasPermission(\App\Support\Access\Permissions::MANAGE_MENUS) ?? false;
+        $canManageUsers = $currentUser?->hasPermission(\App\Support\Access\Permissions::MANAGE_USERS) ?? false;
 
         if (\Illuminate\Support\Facades\Schema::hasTable('pages')) {
             $totalPages = \App\Models\Page::query()->count();
@@ -51,16 +60,31 @@
             $totalCategories = \App\Models\Category::query()->count();
         }
 
+        if (\Illuminate\Support\Facades\Schema::hasTable('users')) {
+            $totalUsers = \App\Models\User::query()->count();
+        }
+
         $activeSection = 'pages';
-        if (request()->routeIs('admin.articles.*', 'admin.categories.*')) {
+        if (request()->routeIs('admin.users.*')) {
+            $activeSection = 'users';
+        } elseif (request()->routeIs('admin.articles.*', 'admin.categories.*')) {
             $activeSection = 'articles';
         } elseif (request()->routeIs('admin.media.*')) {
             $activeSection = 'media';
+        } elseif (request()->routeIs('admin.menus.*')) {
+            $activeSection = 'pages';
+        } elseif (! $canManagePages && $canManageArticles) {
+            $activeSection = 'articles';
+        } elseif (! $canManagePages && ! $canManageArticles && $canManageMedia) {
+            $activeSection = 'media';
+        } elseif (! $canManagePages && ! $canManageArticles && ! $canManageMedia && $canManageUsers) {
+            $activeSection = 'users';
         }
 
         $activeSectionTitle = match ($activeSection) {
             'articles' => 'Articoli',
             'media' => 'Media',
+            'users' => 'Utenze',
             default => 'Pagine',
         };
     @endphp
@@ -69,7 +93,7 @@
         <div class="grid h-full w-full grid-rows-[64px_190px_minmax(0,1fr)] md:grid-rows-1 md:grid-cols-[72px_300px_minmax(0,1fr)]">
             <aside class="flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 text-white md:hidden">
                 <a
-                    href="{{ route('admin.pages.index') }}"
+                    href="{{ route('admin.dashboard') }}"
                     class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white/10"
                     aria-label="Admin Home"
                 >
@@ -79,35 +103,53 @@
                 </a>
 
                 <div class="flex items-center gap-2">
-                    <a
-                        href="{{ route('admin.pages.index') }}"
-                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg {{ request()->routeIs('admin.pages.*', 'admin.menus.*') ? 'bg-white/15' : 'hover:bg-white/10' }}"
-                    >
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <path d="M7 3.5h7l4 4v13H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z"></path>
-                            <path d="M14 3.5v4h4"></path>
-                            <path d="M9 12h6M9 15h6"></path>
-                        </svg>
-                    </a>
-                    <a
-                        href="{{ route('admin.articles.index') }}"
-                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg {{ request()->routeIs('admin.articles.*', 'admin.categories.*') ? 'bg-white/15' : 'hover:bg-white/10' }}"
-                    >
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <path d="M6 5.5h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z"></path>
-                            <path d="M8 9.5h8M8 12.5h8M8 15.5h5"></path>
-                        </svg>
-                    </a>
-                    <a
-                        href="{{ route('admin.media.index') }}"
-                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg {{ request()->routeIs('admin.media.*') ? 'bg-white/15' : 'hover:bg-white/10' }}"
-                    >
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <rect x="3.5" y="5.5" width="17" height="13" rx="2.5"></rect>
-                            <path d="m7.5 15.5 3.5-3.5 2.5 2.5 3-3 1.5 1.5"></path>
-                            <circle cx="9" cy="9.25" r="1"></circle>
-                        </svg>
-                    </a>
+                    @if ($canManagePages || $canManageMenus)
+                        <a
+                            href="{{ $canManagePages ? route('admin.pages.index') : route('admin.menus.edit') }}"
+                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg {{ request()->routeIs('admin.pages.*', 'admin.menus.*') ? 'bg-white/15' : 'hover:bg-white/10' }}"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path d="M7 3.5h7l4 4v13H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z"></path>
+                                <path d="M14 3.5v4h4"></path>
+                                <path d="M9 12h6M9 15h6"></path>
+                            </svg>
+                        </a>
+                    @endif
+                    @if ($canManageArticles || $canManageCategories)
+                        <a
+                            href="{{ $canManageArticles ? route('admin.articles.index') : route('admin.categories.index') }}"
+                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg {{ request()->routeIs('admin.articles.*', 'admin.categories.*') ? 'bg-white/15' : 'hover:bg-white/10' }}"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path d="M6 5.5h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z"></path>
+                                <path d="M8 9.5h8M8 12.5h8M8 15.5h5"></path>
+                            </svg>
+                        </a>
+                    @endif
+                    @if ($canManageMedia)
+                        <a
+                            href="{{ route('admin.media.index') }}"
+                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg {{ request()->routeIs('admin.media.*') ? 'bg-white/15' : 'hover:bg-white/10' }}"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <rect x="3.5" y="5.5" width="17" height="13" rx="2.5"></rect>
+                                <path d="m7.5 15.5 3.5-3.5 2.5 2.5 3-3 1.5 1.5"></path>
+                                <circle cx="9" cy="9.25" r="1"></circle>
+                            </svg>
+                        </a>
+                    @endif
+                    @if ($canManageUsers)
+                        <a
+                            href="{{ route('admin.users.index') }}"
+                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg {{ request()->routeIs('admin.users.*') ? 'bg-white/15' : 'hover:bg-white/10' }}"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path d="M15 19v-1a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v1"></path>
+                                <circle cx="9.5" cy="8" r="3"></circle>
+                                <path d="M19 8v6M16 11h6"></path>
+                            </svg>
+                        </a>
+                    @endif
                     <a href="{{ route('pages.home') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/10">
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                             <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
@@ -134,77 +176,106 @@
 
                 @if ($activeSection === 'pages')
                     <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
-                        <a
-                            href="{{ route('admin.pages.index') }}"
-                            class="flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.pages.index', 'admin.pages.edit') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
-                        >
-                            <span>Tutte</span>
-                            <span class="text-slate-400">{{ $totalPages }}</span>
-                        </a>
-                        <a
-                            href="{{ route('admin.pages.create') }}"
-                            class="flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.pages.create') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
-                        >
-                            <span>Nuova</span>
-                            <span class="text-slate-400">+</span>
-                        </a>
-                        <a
-                            href="{{ route('admin.pages.trash') }}"
-                            class="col-span-2 flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.pages.trash') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
-                        >
-                            <span>Cestino</span>
-                            <span class="text-slate-400">{{ $trashedPages }}</span>
-                        </a>
-                        <a
-                            href="{{ route('admin.menus.edit') }}"
-                            class="col-span-2 flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.menus.*') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
-                        >
-                            <span>Menu visitatori</span>
-                            <span class="text-slate-400">↗</span>
-                        </a>
-                        <div class="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-slate-700">
-                            <span>Published</span>
-                            <span class="text-slate-400">{{ $publishedPages }}</span>
-                        </div>
-                        <div class="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-slate-700">
-                            <span>Draft</span>
-                            <span class="text-slate-400">{{ $draftPages }}</span>
-                        </div>
+                        @if ($canManagePages)
+                            <a
+                                href="{{ route('admin.pages.index') }}"
+                                class="flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.pages.index', 'admin.pages.edit') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
+                            >
+                                <span>Tutte</span>
+                                <span class="text-slate-400">{{ $totalPages }}</span>
+                            </a>
+                            <a
+                                href="{{ route('admin.pages.create') }}"
+                                class="flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.pages.create') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
+                            >
+                                <span>Nuova</span>
+                                <span class="text-slate-400">+</span>
+                            </a>
+                            <a
+                                href="{{ route('admin.pages.trash') }}"
+                                class="col-span-2 flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.pages.trash') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
+                            >
+                                <span>Cestino</span>
+                                <span class="text-slate-400">{{ $trashedPages }}</span>
+                            </a>
+                        @endif
+                        @if ($canManageMenus)
+                            <a
+                                href="{{ route('admin.menus.edit') }}"
+                                class="col-span-2 flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.menus.*') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
+                            >
+                                <span>Menu visitatori</span>
+                                <span class="text-slate-400">↗</span>
+                            </a>
+                        @endif
+                        @if ($canManagePages)
+                            <div class="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-slate-700">
+                                <span>Published</span>
+                                <span class="text-slate-400">{{ $publishedPages }}</span>
+                            </div>
+                            <div class="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-slate-700">
+                                <span>Draft</span>
+                                <span class="text-slate-400">{{ $draftPages }}</span>
+                            </div>
+                        @endif
                     </div>
                 @elseif ($activeSection === 'articles')
                     <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+                        @if ($canManageArticles)
+                            <a
+                                href="{{ route('admin.articles.index') }}"
+                                class="flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.articles.index', 'admin.articles.edit') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
+                            >
+                                <span>Tutti</span>
+                                <span class="text-slate-400">{{ $totalPosts }}</span>
+                            </a>
+                            <a
+                                href="{{ route('admin.articles.create') }}"
+                                class="flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.articles.create') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
+                            >
+                                <span>Nuovo</span>
+                                <span class="text-slate-400">+</span>
+                            </a>
+                            <a
+                                href="{{ route('admin.articles.trash') }}"
+                                class="flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.articles.trash') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
+                            >
+                                <span>Cestino</span>
+                                <span class="text-slate-400">{{ $trashedPosts }}</span>
+                            </a>
+                        @endif
+                        @if ($canManageCategories)
+                            <a
+                                href="{{ route('admin.categories.index') }}"
+                                class="flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.categories.*') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
+                            >
+                                <span>Categorie</span>
+                                <span class="text-slate-400">{{ $totalCategories }}</span>
+                            </a>
+                        @endif
+                        @if ($canManageArticles)
+                            <div class="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-slate-700">
+                                <span>Published</span>
+                                <span class="text-slate-400">{{ $publishedPosts }}</span>
+                            </div>
+                        @endif
+                    </div>
+                @elseif ($activeSection === 'users')
+                    <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
                         <a
-                            href="{{ route('admin.articles.index') }}"
-                            class="flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.articles.index', 'admin.articles.edit') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
+                            href="{{ route('admin.users.index') }}"
+                            class="col-span-2 flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.users.index', 'admin.users.edit') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
                         >
-                            <span>Tutti</span>
-                            <span class="text-slate-400">{{ $totalPosts }}</span>
+                            <span>Tutti gli utenti</span>
+                            <span class="text-slate-400">{{ $totalUsers }}</span>
                         </a>
                         <a
-                            href="{{ route('admin.articles.create') }}"
-                            class="flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.articles.create') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
+                            href="{{ route('admin.users.create') }}"
+                            class="col-span-2 flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.users.create') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
                         >
-                            <span>Nuovo</span>
+                            <span>Nuova utenza</span>
                             <span class="text-slate-400">+</span>
                         </a>
-                        <a
-                            href="{{ route('admin.categories.index') }}"
-                            class="flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.categories.*') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
-                        >
-                            <span>Categorie</span>
-                            <span class="text-slate-400">{{ $totalCategories }}</span>
-                        </a>
-                        <a
-                            href="{{ route('admin.articles.trash') }}"
-                            class="flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.articles.trash') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
-                        >
-                            <span>Cestino</span>
-                            <span class="text-slate-400">{{ $trashedPosts }}</span>
-                        </a>
-                        <div class="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-slate-700">
-                            <span>Published</span>
-                            <span class="text-slate-400">{{ $publishedPosts }}</span>
-                        </div>
                     </div>
                 @else
                     <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
@@ -229,7 +300,7 @@
 
             <aside class="hidden h-full flex-col items-center border-r border-zinc-800 bg-zinc-950 py-4 text-white md:flex">
                 <a
-                    href="{{ route('admin.pages.index') }}"
+                    href="{{ route('admin.dashboard') }}"
                     class="mb-6 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white/10"
                     aria-label="Admin Home"
                 >
@@ -239,49 +310,72 @@
                 </a>
 
                 <nav class="flex flex-1 flex-col items-center gap-2">
-                    <a
-                        href="{{ route('admin.pages.index') }}"
-                        class="group relative inline-flex h-9 w-9 items-center justify-center rounded-lg transition {{ request()->routeIs('admin.pages.*', 'admin.menus.*') ? 'bg-white/20' : 'hover:bg-white/10' }}"
-                        aria-label="Sezione pagine"
-                    >
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <path d="M7 3.5h7l4 4v13H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z"></path>
-                            <path d="M14 3.5v4h4"></path>
-                            <path d="M9 12h6M9 15h6"></path>
-                        </svg>
-                        <span class="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md bg-zinc-800 px-2 py-1 text-[11px] text-white opacity-0 shadow transition group-hover:opacity-100">
-                            Pagine
-                        </span>
-                    </a>
+                    @if ($canManagePages || $canManageMenus)
+                        <a
+                            href="{{ $canManagePages ? route('admin.pages.index') : route('admin.menus.edit') }}"
+                            class="group relative inline-flex h-9 w-9 items-center justify-center rounded-lg transition {{ request()->routeIs('admin.pages.*', 'admin.menus.*') ? 'bg-white/20' : 'hover:bg-white/10' }}"
+                            aria-label="Sezione pagine"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path d="M7 3.5h7l4 4v13H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z"></path>
+                                <path d="M14 3.5v4h4"></path>
+                                <path d="M9 12h6M9 15h6"></path>
+                            </svg>
+                            <span class="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md bg-zinc-800 px-2 py-1 text-[11px] text-white opacity-0 shadow transition group-hover:opacity-100">
+                                Pagine
+                            </span>
+                        </a>
+                    @endif
 
-                    <a
-                        href="{{ route('admin.articles.index') }}"
-                        class="group relative inline-flex h-9 w-9 items-center justify-center rounded-lg transition {{ request()->routeIs('admin.articles.*', 'admin.categories.*') ? 'bg-white/20' : 'hover:bg-white/10' }}"
-                        aria-label="Sezione articoli"
-                    >
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <path d="M6 5.5h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z"></path>
-                            <path d="M8 9.5h8M8 12.5h8M8 15.5h5"></path>
-                        </svg>
-                        <span class="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md bg-zinc-800 px-2 py-1 text-[11px] text-white opacity-0 shadow transition group-hover:opacity-100">
-                            Articoli
-                        </span>
-                    </a>
+                    @if ($canManageArticles || $canManageCategories)
+                        <a
+                            href="{{ $canManageArticles ? route('admin.articles.index') : route('admin.categories.index') }}"
+                            class="group relative inline-flex h-9 w-9 items-center justify-center rounded-lg transition {{ request()->routeIs('admin.articles.*', 'admin.categories.*') ? 'bg-white/20' : 'hover:bg-white/10' }}"
+                            aria-label="Sezione articoli"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path d="M6 5.5h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z"></path>
+                                <path d="M8 9.5h8M8 12.5h8M8 15.5h5"></path>
+                            </svg>
+                            <span class="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md bg-zinc-800 px-2 py-1 text-[11px] text-white opacity-0 shadow transition group-hover:opacity-100">
+                                Articoli
+                            </span>
+                        </a>
+                    @endif
 
-                    <a
-                        href="{{ route('admin.media.index') }}"
-                        class="group relative inline-flex h-9 w-9 items-center justify-center rounded-lg transition {{ request()->routeIs('admin.media.*') ? 'bg-white/20' : 'hover:bg-white/10' }}"
-                        aria-label="Sezione media"
-                    >
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <rect x="3.5" y="5.5" width="17" height="13" rx="2.5"></rect>
-                            <path d="m7.5 15.5 3.5-3.5 2.5 2.5 3-3 1.5 1.5"></path>
-                            <circle cx="9" cy="9.25" r="1"></circle>
-                        </svg>
-                        <span class="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md bg-zinc-800 px-2 py-1 text-[11px] text-white opacity-0 shadow transition group-hover:opacity-100">
-                            Media
-                        </span>
-                    </a>
+                    @if ($canManageMedia)
+                        <a
+                            href="{{ route('admin.media.index') }}"
+                            class="group relative inline-flex h-9 w-9 items-center justify-center rounded-lg transition {{ request()->routeIs('admin.media.*') ? 'bg-white/20' : 'hover:bg-white/10' }}"
+                            aria-label="Sezione media"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <rect x="3.5" y="5.5" width="17" height="13" rx="2.5"></rect>
+                                <path d="m7.5 15.5 3.5-3.5 2.5 2.5 3-3 1.5 1.5"></path>
+                                <circle cx="9" cy="9.25" r="1"></circle>
+                            </svg>
+                            <span class="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md bg-zinc-800 px-2 py-1 text-[11px] text-white opacity-0 shadow transition group-hover:opacity-100">
+                                Media
+                            </span>
+                        </a>
+                    @endif
+
+                    @if ($canManageUsers)
+                        <a
+                            href="{{ route('admin.users.index') }}"
+                            class="group relative inline-flex h-9 w-9 items-center justify-center rounded-lg transition {{ request()->routeIs('admin.users.*') ? 'bg-white/20' : 'hover:bg-white/10' }}"
+                            aria-label="Sezione utenze"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path d="M15 19v-1a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v1"></path>
+                                <circle cx="9.5" cy="8" r="3"></circle>
+                                <path d="M19 8v6M16 11h6"></path>
+                            </svg>
+                            <span class="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md bg-zinc-800 px-2 py-1 text-[11px] text-white opacity-0 shadow transition group-hover:opacity-100">
+                                Utenze
+                            </span>
+                        </a>
+                    @endif
 
                     <a
                         href="{{ route('pages.home') }}"
@@ -327,107 +421,139 @@
                     <p class="mt-6 text-sm font-semibold text-slate-400">Pagine</p>
 
                     <div class="mt-3 space-y-1.5">
-                        <a
-                            href="{{ route('admin.pages.index') }}"
-                            class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.pages.index', 'admin.pages.edit') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
-                        >
-                            <span class="inline-flex items-center gap-2">
-                                <span class="inline-block h-2 w-2 rounded-full bg-slate-400"></span>
-                                Tutte
-                            </span>
-                            <span class="text-slate-400">{{ $totalPages }}</span>
-                        </a>
+                        @if ($canManagePages)
+                            <a
+                                href="{{ route('admin.pages.index') }}"
+                                class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.pages.index', 'admin.pages.edit') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                            >
+                                <span class="inline-flex items-center gap-2">
+                                    <span class="inline-block h-2 w-2 rounded-full bg-slate-400"></span>
+                                    Tutte
+                                </span>
+                                <span class="text-slate-400">{{ $totalPages }}</span>
+                            </a>
 
-                        <a
-                            href="{{ route('admin.pages.create') }}"
-                            class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.pages.create') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
-                        >
-                            <span class="inline-flex items-center gap-2">
-                                <span class="inline-block h-2 w-2 rounded-full bg-slate-400"></span>
-                                Nuova pagina
-                            </span>
-                            <span class="text-slate-400">+</span>
-                        </a>
-                        <a
-                            href="{{ route('admin.menus.edit') }}"
-                            class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.menus.*') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
-                        >
-                            <span class="inline-flex items-center gap-2">
-                                <span class="inline-block h-2 w-2 rounded-full bg-slate-400"></span>
-                                Menu visitatori
-                            </span>
-                            <span class="text-slate-400">↗</span>
-                        </a>
-                        <a
-                            href="{{ route('admin.pages.trash') }}"
-                            class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.pages.trash') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
-                        >
-                            <span class="inline-flex items-center gap-2">
-                                <span class="inline-block h-2 w-2 rounded-full bg-slate-400"></span>
-                                Cestino
-                            </span>
-                            <span class="text-slate-400">{{ $trashedPages }}</span>
-                        </a>
+                            <a
+                                href="{{ route('admin.pages.create') }}"
+                                class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.pages.create') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                            >
+                                <span class="inline-flex items-center gap-2">
+                                    <span class="inline-block h-2 w-2 rounded-full bg-slate-400"></span>
+                                    Nuova pagina
+                                </span>
+                                <span class="text-slate-400">+</span>
+                            </a>
+                        @endif
+                        @if ($canManageMenus)
+                            <a
+                                href="{{ route('admin.menus.edit') }}"
+                                class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.menus.*') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                            >
+                                <span class="inline-flex items-center gap-2">
+                                    <span class="inline-block h-2 w-2 rounded-full bg-slate-400"></span>
+                                    Menu visitatori
+                                </span>
+                                <span class="text-slate-400">↗</span>
+                            </a>
+                        @endif
+                        @if ($canManagePages)
+                            <a
+                                href="{{ route('admin.pages.trash') }}"
+                                class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.pages.trash') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                            >
+                                <span class="inline-flex items-center gap-2">
+                                    <span class="inline-block h-2 w-2 rounded-full bg-slate-400"></span>
+                                    Cestino
+                                </span>
+                                <span class="text-slate-400">{{ $trashedPages }}</span>
+                            </a>
+                        @endif
                     </div>
 
-                    <div class="my-6 border-t border-slate-200"></div>
+                    @if ($canManagePages)
+                        <div class="my-6 border-t border-slate-200"></div>
 
-                    <p class="text-sm font-semibold text-slate-400">Stato pagine</p>
-                    <div class="mt-3 space-y-1.5">
-                        <div class="flex items-center justify-between px-2.5 py-2 text-[14px] text-slate-800">
-                            <span>Published</span>
-                            <span class="text-slate-400">{{ $publishedPages }}</span>
+                        <p class="text-sm font-semibold text-slate-400">Stato pagine</p>
+                        <div class="mt-3 space-y-1.5">
+                            <div class="flex items-center justify-between px-2.5 py-2 text-[14px] text-slate-800">
+                                <span>Published</span>
+                                <span class="text-slate-400">{{ $publishedPages }}</span>
+                            </div>
+                            <div class="flex items-center justify-between px-2.5 py-2 text-[14px] text-slate-800">
+                                <span>Draft</span>
+                                <span class="text-slate-400">{{ $draftPages }}</span>
+                            </div>
                         </div>
-                        <div class="flex items-center justify-between px-2.5 py-2 text-[14px] text-slate-800">
-                            <span>Draft</span>
-                            <span class="text-slate-400">{{ $draftPages }}</span>
-                        </div>
-                    </div>
+                    @endif
                 @elseif ($activeSection === 'articles')
                     <p class="mt-6 text-sm font-semibold text-slate-400">Articoli</p>
                     <div class="mt-3 space-y-1.5">
-                        <a
-                            href="{{ route('admin.articles.index') }}"
-                            class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.articles.index', 'admin.articles.edit') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
-                        >
-                            <span>Tutti gli articoli</span>
-                            <span class="text-slate-400">{{ $totalPosts }}</span>
-                        </a>
-                        <a
-                            href="{{ route('admin.articles.create') }}"
-                            class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.articles.create') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
-                        >
-                            <span>Nuovo articolo</span>
-                            <span class="text-slate-400">+</span>
-                        </a>
-                        <a
-                            href="{{ route('admin.categories.index') }}"
-                            class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.categories.*') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
-                        >
-                            <span>Categorie</span>
-                            <span class="text-slate-400">{{ $totalCategories }}</span>
-                        </a>
-                        <a
-                            href="{{ route('admin.articles.trash') }}"
-                            class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.articles.trash') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
-                        >
-                            <span>Cestino</span>
-                            <span class="text-slate-400">{{ $trashedPosts }}</span>
-                        </a>
+                        @if ($canManageArticles)
+                            <a
+                                href="{{ route('admin.articles.index') }}"
+                                class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.articles.index', 'admin.articles.edit') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                            >
+                                <span>Tutti gli articoli</span>
+                                <span class="text-slate-400">{{ $totalPosts }}</span>
+                            </a>
+                            <a
+                                href="{{ route('admin.articles.create') }}"
+                                class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.articles.create') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                            >
+                                <span>Nuovo articolo</span>
+                                <span class="text-slate-400">+</span>
+                            </a>
+                            <a
+                                href="{{ route('admin.articles.trash') }}"
+                                class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.articles.trash') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                            >
+                                <span>Cestino</span>
+                                <span class="text-slate-400">{{ $trashedPosts }}</span>
+                            </a>
+                        @endif
+                        @if ($canManageCategories)
+                            <a
+                                href="{{ route('admin.categories.index') }}"
+                                class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.categories.*') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                            >
+                                <span>Categorie</span>
+                                <span class="text-slate-400">{{ $totalCategories }}</span>
+                            </a>
+                        @endif
                     </div>
 
-                    <div class="my-6 border-t border-slate-200"></div>
+                    @if ($canManageArticles)
+                        <div class="my-6 border-t border-slate-200"></div>
 
-                    <p class="text-sm font-semibold text-slate-400">Stato articoli</p>
+                        <p class="text-sm font-semibold text-slate-400">Stato articoli</p>
+                        <div class="mt-3 space-y-1.5">
+                            <div class="flex items-center justify-between px-2.5 py-2 text-[14px] text-slate-800">
+                                <span>Published</span>
+                                <span class="text-slate-400">{{ $publishedPosts }}</span>
+                            </div>
+                            <div class="flex items-center justify-between px-2.5 py-2 text-[14px] text-slate-800">
+                                <span>Draft</span>
+                                <span class="text-slate-400">{{ $draftPosts }}</span>
+                            </div>
+                        </div>
+                    @endif
+                @elseif ($activeSection === 'users')
+                    <p class="mt-6 text-sm font-semibold text-slate-400">Utenze</p>
                     <div class="mt-3 space-y-1.5">
-                        <div class="flex items-center justify-between px-2.5 py-2 text-[14px] text-slate-800">
-                            <span>Published</span>
-                            <span class="text-slate-400">{{ $publishedPosts }}</span>
-                        </div>
-                        <div class="flex items-center justify-between px-2.5 py-2 text-[14px] text-slate-800">
-                            <span>Draft</span>
-                            <span class="text-slate-400">{{ $draftPosts }}</span>
-                        </div>
+                        <a
+                            href="{{ route('admin.users.index') }}"
+                            class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.users.index', 'admin.users.edit') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                        >
+                            <span>Tutti gli utenti</span>
+                            <span class="text-slate-400">{{ $totalUsers }}</span>
+                        </a>
+                        <a
+                            href="{{ route('admin.users.create') }}"
+                            class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.users.create') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                        >
+                            <span>Nuova utenza</span>
+                            <span class="text-slate-400">+</span>
+                        </a>
                     </div>
                 @else
                     <p class="mt-6 text-sm font-semibold text-slate-400">Media</p>

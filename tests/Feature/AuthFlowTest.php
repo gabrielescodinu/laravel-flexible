@@ -36,7 +36,7 @@ class AuthFlowTest extends TestCase
             'email' => $user->email,
             'password' => 'password',
             'remember' => '1',
-        ])->assertRedirect(route('admin.pages.index'));
+        ])->assertRedirect(route('admin.dashboard'));
 
         $this->assertAuthenticatedAs($user);
 

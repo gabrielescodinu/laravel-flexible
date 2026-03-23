@@ -72,7 +72,7 @@
         <div class="border-b border-slate-700 bg-slate-900 text-slate-200">
             <div class="mx-auto flex w-full max-w-screen-xl flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs md:px-8">
                 <div class="flex flex-wrap items-center gap-1.5">
-                    <a href="{{ route('admin.pages.index') }}" class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium hover:bg-slate-800">
+                    <a href="{{ route('admin.dashboard') }}" class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium hover:bg-slate-800">
                         <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h14M10 3l7 7-7 7"></path>
                         </svg>
