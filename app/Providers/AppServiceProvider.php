@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Menu;
 use App\Models\MenuItem;
+use App\Models\SiteSetting;
 use App\Support\Flexible\BlockRegistry;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
@@ -40,7 +41,23 @@ class AppServiceProvider extends ServiceProvider
                     'open_in_new_tab' => false,
                     'children' => [],
                 ],
+                [
+                    'id' => null,
+                    'label' => 'Prodotti',
+                    'url' => route('products.index'),
+                    'open_in_new_tab' => false,
+                    'children' => [],
+                ],
             ];
+
+            $ecommerceEnabled = SiteSetting::ecommerceEnabled();
+            $request = request();
+            $cartItems = $request->hasSession()
+                ? $request->session()->get('cart.items', [])
+                : [];
+            $cartItemCount = is_array($cartItems)
+                ? (int) collect($cartItems)->sum(static fn (mixed $quantity): int => max(0, (int) $quantity))
+                : 0;
 
             if (! Schema::hasTable('menus') || ! Schema::hasTable('menu_items')) {
                 $view->with('visitorMenu', [
@@ -49,6 +66,8 @@ class AppServiceProvider extends ServiceProvider
                     'logo_alt' => config('app.name').' logo',
                     'show_search' => true,
                     'items' => $fallbackItems,
+                    'ecommerceEnabled' => $ecommerceEnabled,
+                    'cartItemCount' => $cartItemCount,
                 ]);
 
                 return;
@@ -66,6 +85,8 @@ class AppServiceProvider extends ServiceProvider
                     'logo_alt' => config('app.name').' logo',
                     'show_search' => true,
                     'items' => $fallbackItems,
+                    'ecommerceEnabled' => $ecommerceEnabled,
+                    'cartItemCount' => $cartItemCount,
                 ]);
 
                 return;
@@ -107,6 +128,8 @@ class AppServiceProvider extends ServiceProvider
                 'logo_alt' => $menu->logo_alt ?: config('app.name').' logo',
                 'show_search' => $menu->show_search,
                 'items' => $menuItems,
+                'ecommerceEnabled' => $ecommerceEnabled,
+                'cartItemCount' => $cartItemCount,
             ]);
         });
     }

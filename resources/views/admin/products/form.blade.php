@@ -1,0 +1,341 @@
+@extends('layouts.admin')
+
+@section('title', $product->exists ? 'Modifica prodotto' : 'Nuovo prodotto')
+
+@section('content')
+    <section class="panel">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Ecommerce editor</p>
+                <h1 class="mt-1 text-2xl font-bold text-slate-900">{{ $product->exists ? 'Modifica prodotto' : 'Nuovo prodotto' }}</h1>
+                <p class="muted mt-2">Configura scheda prodotto, prezzo e immagine principale.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                @if (auth()->user()?->hasPermission(\App\Support\Access\Permissions::MANAGE_SETTINGS))
+                    <a class="btn btn-secondary" href="{{ route('admin.settings.edit') }}">Impostazioni</a>
+                @endif
+                <a class="btn btn-secondary" href="{{ route('admin.products.index') }}">Torna alla lista</a>
+            </div>
+        </div>
+    </section>
+
+    <form method="POST" action="{{ $formAction }}" class="mt-4 space-y-4">
+        @csrf
+        @if ($formMethod !== 'POST')
+            @method($formMethod)
+        @endif
+
+        <section class="panel space-y-4">
+            <div class="grid gap-4 md:grid-cols-2">
+                <div class="field">
+                    <label class="field-label" for="title">Titolo</label>
+                    <input class="field-input" id="title" name="title" type="text" value="{{ old('title', $product->title) }}" required>
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="slug">Slug</label>
+                    <input class="field-input" id="slug" name="slug" type="text" value="{{ old('slug', $product->slug) }}" placeholder="nome-prodotto" required>
+                </div>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+                <div class="field">
+                    <label class="field-label" for="price">Prezzo (€)</label>
+                    <input class="field-input" id="price" name="price" type="number" step="0.01" min="0" value="{{ old('price', $product->price) }}" required>
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="status">Stato</label>
+                    @php($currentStatus = old('status', $product->status ?: 'draft'))
+                    <select class="field-input" id="status" name="status" required>
+                        <option value="draft" @selected($currentStatus === 'draft')>draft</option>
+                        <option value="published" @selected($currentStatus === 'published')>published</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="description">Descrizione</label>
+                <textarea class="field-input min-h-36" id="description" name="description" placeholder="Descrizione prodotto...">{{ old('description', $product->description) }}</textarea>
+            </div>
+        </section>
+
+        <section class="panel space-y-4">
+            <h2 class="text-lg font-semibold text-slate-900">Media</h2>
+
+            <div class="field">
+                <label class="field-label" for="featured_image">Immagine prodotto</label>
+                <input
+                    class="field-input"
+                    id="featured_image"
+                    name="featured_image"
+                    type="text"
+                    value="{{ old('featured_image', $product->featured_image) }}"
+                    placeholder="/storage/media/... oppure https://..."
+                >
+                <div class="mt-2 flex flex-wrap items-center gap-2">
+                    <button type="button" class="btn btn-secondary" data-open-featured-picker>Media Manager</button>
+                    <button type="button" class="btn btn-secondary" data-clear-featured-image>Pulisci</button>
+                </div>
+            </div>
+
+            <div class="hidden overflow-hidden rounded-xl border border-slate-200 bg-slate-100" data-featured-preview-wrap>
+                <img class="h-52 w-full object-cover" src="" alt="Anteprima immagine prodotto" data-featured-preview>
+            </div>
+        </section>
+
+        <div class="flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-primary">{{ $submitLabel }}</button>
+            @if ($product->exists && $product->status === 'published')
+                <a class="btn btn-secondary" href="{{ $product->public_url }}" target="_blank" rel="noopener">Apri prodotto</a>
+            @endif
+        </div>
+    </form>
+
+    <script>
+        (() => {
+            const form = document.querySelector('form');
+            const imageInput = document.getElementById('featured_image');
+            const openPickerButton = document.querySelector('[data-open-featured-picker]');
+            const clearButton = document.querySelector('[data-clear-featured-image]');
+            const previewWrap = document.querySelector('[data-featured-preview-wrap]');
+            const previewImage = document.querySelector('[data-featured-preview]');
+            const csrfToken = form?.querySelector('input[name="_token"]')?.value || '';
+            const mediaUploadEndpoint = @json(route('admin.media.upload'));
+            const mediaLibraryEndpoint = @json(route('admin.media.library'));
+
+            if (!imageInput || !previewWrap || !previewImage) {
+                return;
+            }
+
+            function updatePreview() {
+                const value = String(imageInput.value || '').trim();
+                if (value === '') {
+                    previewWrap.classList.add('hidden');
+                    previewImage.removeAttribute('src');
+                    return;
+                }
+
+                previewImage.src = value;
+                previewWrap.classList.remove('hidden');
+            }
+
+            function openMediaPicker() {
+                const overlay = document.createElement('div');
+                overlay.className = 'fixed inset-0 z-[90] flex items-center justify-center bg-black/45 p-4';
+                overlay.innerHTML = `
+                    <div class="w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                        <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                            <h3 class="text-base font-semibold text-slate-900">Seleziona media</h3>
+                            <button type="button" class="btn btn-secondary" data-close-modal>Chiudi</button>
+                        </div>
+                        <div class="border-b border-slate-200 px-4 py-2">
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-primary" data-tab="library">Libreria</button>
+                                <button type="button" class="btn btn-secondary" data-tab="upload">Carica nuovo</button>
+                            </div>
+                        </div>
+                        <div class="max-h-[70vh] overflow-y-auto p-4">
+                            <section data-panel="library" class="space-y-3">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <input type="text" class="field-input" placeholder="Cerca immagini..." data-library-search>
+                                    <button type="button" class="btn btn-secondary" data-library-refresh>Aggiorna</button>
+                                </div>
+                                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-library-grid></div>
+                            </section>
+
+                            <section data-panel="upload" class="hidden space-y-3">
+                                <p class="text-sm text-slate-600">Carica una nuova immagine nel Media Manager e selezionala subito.</p>
+                                <input type="file" accept="image/*" class="field-input" data-upload-file>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" class="btn btn-primary" data-upload-submit>Carica immagine</button>
+                                    <span class="text-xs text-slate-500" data-upload-status></span>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(overlay);
+
+                const closeButton = overlay.querySelector('[data-close-modal]');
+                const tabButtons = [...overlay.querySelectorAll('[data-tab]')];
+                const libraryPanel = overlay.querySelector('[data-panel="library"]');
+                const uploadPanel = overlay.querySelector('[data-panel="upload"]');
+                const librarySearch = overlay.querySelector('[data-library-search]');
+                const libraryRefresh = overlay.querySelector('[data-library-refresh]');
+                const libraryGrid = overlay.querySelector('[data-library-grid]');
+                const uploadFile = overlay.querySelector('[data-upload-file]');
+                const uploadSubmit = overlay.querySelector('[data-upload-submit]');
+                const uploadStatus = overlay.querySelector('[data-upload-status]');
+
+                if (!closeButton || !libraryPanel || !uploadPanel || !librarySearch || !libraryRefresh || !libraryGrid || !uploadFile || !uploadSubmit || !uploadStatus) {
+                    overlay.remove();
+                    return;
+                }
+
+                const closeModal = () => {
+                    document.removeEventListener('keydown', onEscape);
+                    overlay.remove();
+                };
+
+                const onEscape = (event) => {
+                    if (event.key === 'Escape') {
+                        closeModal();
+                    }
+                };
+
+                document.addEventListener('keydown', onEscape);
+
+                overlay.addEventListener('click', (event) => {
+                    if (event.target === overlay) {
+                        closeModal();
+                    }
+                });
+
+                closeButton.addEventListener('click', closeModal);
+
+                function switchTab(tab) {
+                    const libraryActive = tab === 'library';
+                    libraryPanel.classList.toggle('hidden', !libraryActive);
+                    uploadPanel.classList.toggle('hidden', libraryActive);
+
+                    tabButtons.forEach((button) => {
+                        const isActive = button.getAttribute('data-tab') === tab;
+                        button.className = `btn ${isActive ? 'btn-primary' : 'btn-secondary'}`;
+                    });
+                }
+
+                tabButtons.forEach((button) => {
+                    button.addEventListener('click', () => {
+                        switchTab(button.getAttribute('data-tab') || 'library');
+                    });
+                });
+
+                function selectMedia(url) {
+                    imageInput.value = url;
+                    imageInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    updatePreview();
+                    closeModal();
+                }
+
+                async function loadLibrary(search = '') {
+                    libraryGrid.innerHTML = '<p class="text-sm text-slate-500">Caricamento libreria...</p>';
+                    try {
+                        const params = new URLSearchParams();
+                        if (search.trim() !== '') {
+                            params.set('search', search.trim());
+                        }
+
+                        const response = await fetch(`${mediaLibraryEndpoint}?${params.toString()}`, {
+                            headers: {
+                                Accept: 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                            credentials: 'same-origin',
+                        });
+
+                        const payload = await response.json();
+                        const mediaItems = Array.isArray(payload?.data) ? payload.data : [];
+
+                        if (!response.ok) {
+                            throw new Error(payload?.message || 'Errore nel caricamento libreria');
+                        }
+
+                        if (mediaItems.length === 0) {
+                            libraryGrid.innerHTML = '<p class="text-sm text-slate-500">Nessuna immagine trovata.</p>';
+                            return;
+                        }
+
+                        libraryGrid.innerHTML = '';
+                        mediaItems.forEach((item) => {
+                            const card = document.createElement('button');
+                            card.type = 'button';
+                            card.className = 'overflow-hidden rounded-xl border border-slate-200 bg-white text-left hover:border-slate-400';
+                            card.innerHTML = `
+                                <div class="h-32 w-full bg-slate-100">
+                                    <img src="${item.url}" alt="${item.name}" class="h-full w-full object-cover" loading="lazy">
+                                </div>
+                                <div class="p-2">
+                                    <p class="truncate text-xs font-medium text-slate-800">${item.name}</p>
+                                    <p class="text-[11px] text-slate-500">${item.human_size ?? ''}</p>
+                                </div>
+                            `;
+                            card.addEventListener('click', () => selectMedia(item.url));
+                            libraryGrid.appendChild(card);
+                        });
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Errore nel caricamento libreria';
+                        libraryGrid.innerHTML = `<p class="text-sm text-rose-600">${message}</p>`;
+                    }
+                }
+
+                let searchDebounce = null;
+                librarySearch.addEventListener('input', () => {
+                    if (searchDebounce) {
+                        clearTimeout(searchDebounce);
+                    }
+
+                    searchDebounce = setTimeout(() => {
+                        loadLibrary(librarySearch.value);
+                    }, 250);
+                });
+
+                libraryRefresh.addEventListener('click', () => {
+                    loadLibrary(librarySearch.value);
+                });
+
+                uploadSubmit.addEventListener('click', async () => {
+                    const file = uploadFile.files?.[0];
+                    if (!file) {
+                        uploadStatus.textContent = 'Seleziona prima un file immagine.';
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('_token', csrfToken);
+                    formData.append('file', file);
+
+                    uploadSubmit.disabled = true;
+                    uploadStatus.textContent = 'Upload in corso...';
+
+                    try {
+                        const response = await fetch(mediaUploadEndpoint, {
+                            method: 'POST',
+                            body: formData,
+                            credentials: 'same-origin',
+                            headers: {
+                                Accept: 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                        });
+
+                        const payload = await response.json();
+                        if (!response.ok || !payload.url) {
+                            throw new Error(payload.message || 'Upload non riuscito');
+                        }
+
+                        uploadStatus.textContent = 'Caricato con successo.';
+                        selectMedia(payload.url);
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Errore durante upload immagine';
+                        uploadStatus.textContent = message;
+                    } finally {
+                        uploadSubmit.disabled = false;
+                    }
+                });
+
+                switchTab('library');
+                loadLibrary('');
+            }
+
+            imageInput.addEventListener('input', updatePreview);
+            openPickerButton?.addEventListener('click', openMediaPicker);
+            clearButton?.addEventListener('click', () => {
+                imageInput.value = '';
+                updatePreview();
+            });
+            updatePreview();
+        })();
+    </script>
+@endsection

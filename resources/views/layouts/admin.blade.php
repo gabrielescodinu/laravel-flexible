@@ -21,6 +21,9 @@
         $documentMedia = 0;
         $trashedPages = 0;
         $totalUsers = 0;
+        $totalProducts = 0;
+        $publishedProducts = 0;
+        $draftProducts = 0;
         $currentUser = auth()->user();
 
         $canManagePages = $currentUser?->hasPermission(\App\Support\Access\Permissions::MANAGE_PAGES) ?? false;
@@ -29,6 +32,8 @@
         $canManageMedia = $currentUser?->hasPermission(\App\Support\Access\Permissions::MANAGE_MEDIA) ?? false;
         $canManageMenus = $currentUser?->hasPermission(\App\Support\Access\Permissions::MANAGE_MENUS) ?? false;
         $canManageUsers = $currentUser?->hasPermission(\App\Support\Access\Permissions::MANAGE_USERS) ?? false;
+        $canManageProducts = $currentUser?->hasPermission(\App\Support\Access\Permissions::MANAGE_PRODUCTS) ?? false;
+        $canManageSettings = $currentUser?->hasPermission(\App\Support\Access\Permissions::MANAGE_SETTINGS) ?? false;
 
         if (\Illuminate\Support\Facades\Schema::hasTable('pages')) {
             $totalPages = \App\Models\Page::query()->count();
@@ -64,9 +69,17 @@
             $totalUsers = \App\Models\User::query()->count();
         }
 
+        if (\Illuminate\Support\Facades\Schema::hasTable('products')) {
+            $totalProducts = \App\Models\Product::query()->count();
+            $publishedProducts = \App\Models\Product::query()->where('status', 'published')->count();
+            $draftProducts = \App\Models\Product::query()->where('status', 'draft')->count();
+        }
+
         $activeSection = 'pages';
         if (request()->routeIs('admin.users.*')) {
             $activeSection = 'users';
+        } elseif (request()->routeIs('admin.products.*', 'admin.settings.*')) {
+            $activeSection = 'products';
         } elseif (request()->routeIs('admin.articles.*', 'admin.categories.*')) {
             $activeSection = 'articles';
         } elseif (request()->routeIs('admin.media.*')) {
@@ -77,6 +90,8 @@
             $activeSection = 'articles';
         } elseif (! $canManagePages && ! $canManageArticles && $canManageMedia) {
             $activeSection = 'media';
+        } elseif (! $canManagePages && ! $canManageArticles && ! $canManageMedia && $canManageProducts) {
+            $activeSection = 'products';
         } elseif (! $canManagePages && ! $canManageArticles && ! $canManageMedia && $canManageUsers) {
             $activeSection = 'users';
         }
@@ -85,6 +100,7 @@
             'articles' => 'Articoli',
             'media' => 'Media',
             'users' => 'Utenze',
+            'products' => 'Shop',
             default => 'Pagine',
         };
     @endphp
@@ -147,6 +163,17 @@
                                 <path d="M15 19v-1a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v1"></path>
                                 <circle cx="9.5" cy="8" r="3"></circle>
                                 <path d="M19 8v6M16 11h6"></path>
+                            </svg>
+                        </a>
+                    @endif
+                    @if ($canManageProducts || $canManageSettings)
+                        <a
+                            href="{{ $canManageProducts ? route('admin.products.index') : route('admin.settings.edit') }}"
+                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg {{ request()->routeIs('admin.products.*', 'admin.settings.*') ? 'bg-white/15' : 'hover:bg-white/10' }}"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path d="M6 7h12l-1.5 10h-9L6 7Z"></path>
+                                <path d="M9 7a3 3 0 0 1 6 0"></path>
                             </svg>
                         </a>
                     @endif
@@ -258,6 +285,34 @@
                                 <span>Published</span>
                                 <span class="text-slate-400">{{ $publishedPosts }}</span>
                             </div>
+                        @endif
+                    </div>
+                @elseif ($activeSection === 'products')
+                    <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+                        @if ($canManageProducts)
+                            <a
+                                href="{{ route('admin.products.index') }}"
+                                class="col-span-2 flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.products.index', 'admin.products.edit') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
+                            >
+                                <span>Tutti i prodotti</span>
+                                <span class="text-slate-400">{{ $totalProducts }}</span>
+                            </a>
+                            <a
+                                href="{{ route('admin.products.create') }}"
+                                class="col-span-2 flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.products.create') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
+                            >
+                                <span>Nuovo prodotto</span>
+                                <span class="text-slate-400">+</span>
+                            </a>
+                        @endif
+                        @if ($canManageSettings)
+                            <a
+                                href="{{ route('admin.settings.edit') }}"
+                                class="col-span-2 flex items-center justify-between rounded-lg px-3 py-2 {{ request()->routeIs('admin.settings.*') ? 'bg-slate-200 font-semibold text-slate-900' : 'bg-white text-slate-700' }}"
+                            >
+                                <span>Impostazioni ecommerce</span>
+                                <span class="text-slate-400">⚙</span>
+                            </a>
                         @endif
                     </div>
                 @elseif ($activeSection === 'users')
@@ -373,6 +428,22 @@
                             </svg>
                             <span class="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md bg-zinc-800 px-2 py-1 text-[11px] text-white opacity-0 shadow transition group-hover:opacity-100">
                                 Utenze
+                            </span>
+                        </a>
+                    @endif
+
+                    @if ($canManageProducts || $canManageSettings)
+                        <a
+                            href="{{ $canManageProducts ? route('admin.products.index') : route('admin.settings.edit') }}"
+                            class="group relative inline-flex h-9 w-9 items-center justify-center rounded-lg transition {{ request()->routeIs('admin.products.*', 'admin.settings.*') ? 'bg-white/20' : 'hover:bg-white/10' }}"
+                            aria-label="Sezione shop"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path d="M6 7h12l-1.5 10h-9L6 7Z"></path>
+                                <path d="M9 7a3 3 0 0 1 6 0"></path>
+                            </svg>
+                            <span class="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md bg-zinc-800 px-2 py-1 text-[11px] text-white opacity-0 shadow transition group-hover:opacity-100">
+                                Shop
                             </span>
                         </a>
                     @endif
@@ -534,6 +605,51 @@
                             <div class="flex items-center justify-between px-2.5 py-2 text-[14px] text-slate-800">
                                 <span>Draft</span>
                                 <span class="text-slate-400">{{ $draftPosts }}</span>
+                            </div>
+                        </div>
+                    @endif
+                @elseif ($activeSection === 'products')
+                    <p class="mt-6 text-sm font-semibold text-slate-400">Prodotti</p>
+                    <div class="mt-3 space-y-1.5">
+                        @if ($canManageProducts)
+                            <a
+                                href="{{ route('admin.products.index') }}"
+                                class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.products.index', 'admin.products.edit') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                            >
+                                <span>Tutti i prodotti</span>
+                                <span class="text-slate-400">{{ $totalProducts }}</span>
+                            </a>
+                            <a
+                                href="{{ route('admin.products.create') }}"
+                                class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.products.create') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                            >
+                                <span>Nuovo prodotto</span>
+                                <span class="text-slate-400">+</span>
+                            </a>
+                        @endif
+                        @if ($canManageSettings)
+                            <a
+                                href="{{ route('admin.settings.edit') }}"
+                                class="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-800 transition {{ request()->routeIs('admin.settings.*') ? 'bg-slate-200/85' : 'hover:bg-slate-200/60' }}"
+                            >
+                                <span>Impostazioni ecommerce</span>
+                                <span class="text-slate-400">⚙</span>
+                            </a>
+                        @endif
+                    </div>
+
+                    @if ($canManageProducts)
+                        <div class="my-6 border-t border-slate-200"></div>
+
+                        <p class="text-sm font-semibold text-slate-400">Stato prodotti</p>
+                        <div class="mt-3 space-y-1.5">
+                            <div class="flex items-center justify-between px-2.5 py-2 text-[14px] text-slate-800">
+                                <span>Published</span>
+                                <span class="text-slate-400">{{ $publishedProducts }}</span>
+                            </div>
+                            <div class="flex items-center justify-between px-2.5 py-2 text-[14px] text-slate-800">
+                                <span>Draft</span>
+                                <span class="text-slate-400">{{ $draftProducts }}</span>
                             </div>
                         </div>
                     @endif

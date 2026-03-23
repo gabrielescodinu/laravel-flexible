@@ -53,6 +53,8 @@
         $showSearch = (bool) ($menu['show_search'] ?? true);
         $logoUrl = $menu['logo_url'] ?? null;
         $logoAlt = $menu['logo_alt'] ?? (config('app.name').' logo');
+        $ecommerceEnabled = (bool) ($menu['ecommerceEnabled'] ?? false);
+        $cartItemCount = (int) ($menu['cartItemCount'] ?? 0);
     @endphp
 
     @auth
@@ -66,6 +68,9 @@
             } elseif (isset($post) && $post instanceof \App\Models\Post) {
                 $editLink = route('admin.articles.edit', $post);
                 $editLabel = 'Modifica articolo';
+            } elseif (isset($product) && $product instanceof \App\Models\Product) {
+                $editLink = route('admin.products.edit', $product);
+                $editLabel = 'Modifica prodotto';
             }
         @endphp
 
@@ -140,6 +145,16 @@
                         'level' => 0,
                     ])
 
+                    @if ($ecommerceEnabled)
+                        <a
+                            href="{{ route('cart.index') }}"
+                            class="ml-4 inline-flex h-10 items-center gap-2 rounded-full border border-white/20 px-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                        >
+                            <span>Carrello</span>
+                            <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1 text-[11px]">{{ $cartItemCount }}</span>
+                        </a>
+                    @endif
+
                     @if ($showSearch)
                         <button type="button" class="ml-4 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white transition hover:bg-white/10" data-open-search>
                             <span class="sr-only">Apri ricerca</span>
@@ -172,6 +187,13 @@
                     @endif
 
                     <div class="text-white">
+                        @if ($ecommerceEnabled)
+                            <a href="{{ route('cart.index') }}" class="mb-4 inline-flex items-center gap-2 rounded-xl border border-white/20 px-3 py-2 text-sm font-semibold">
+                                <span>Carrello</span>
+                                <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1 text-[11px]">{{ $cartItemCount }}</span>
+                            </a>
+                        @endif
+
                         @include('layouts.partials.visitor-mobile-menu', [
                             'items' => $menuItems,
                             'isChild' => false,

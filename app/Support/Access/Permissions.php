@@ -10,6 +10,8 @@ final class Permissions
     public const MANAGE_MEDIA = 'manage_media';
     public const MANAGE_MENUS = 'manage_menus';
     public const MANAGE_USERS = 'manage_users';
+    public const MANAGE_PRODUCTS = 'manage_products';
+    public const MANAGE_SETTINGS = 'manage_settings';
 
     /**
      * @return array<int, array{name: string, label: string, group: string}>
@@ -47,6 +49,16 @@ final class Permissions
                 'label' => 'Gestione utenti, ruoli e permessi',
                 'group' => 'Amministrazione',
             ],
+            [
+                'name' => self::MANAGE_PRODUCTS,
+                'label' => 'Gestione prodotti ecommerce',
+                'group' => 'Shop',
+            ],
+            [
+                'name' => self::MANAGE_SETTINGS,
+                'label' => 'Gestione impostazioni sito',
+                'group' => 'Amministrazione',
+            ],
         ];
     }
 
@@ -81,6 +93,7 @@ final class Permissions
                     self::MANAGE_PAGES,
                     self::MANAGE_ARTICLES,
                     self::MANAGE_CATEGORIES,
+                    self::MANAGE_PRODUCTS,
                 ],
             ],
             [

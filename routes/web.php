@@ -5,10 +5,14 @@ use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\MenuController as AdminMenuController;
 use App\Http\Controllers\Admin\PageBuilderController;
 use App\Http\Controllers\Admin\MediaController;
+use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\ArticleController as PublicArticleController;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\ProductController as PublicProductController;
 use App\Http\Controllers\ProfileController;
 use App\Support\Access\Permissions;
 use Illuminate\Support\Facades\Route;
@@ -42,6 +46,14 @@ Route::prefix('admin')
 
             if ($user?->hasPermission(Permissions::MANAGE_USERS)) {
                 return redirect()->route('admin.users.index');
+            }
+
+            if ($user?->hasPermission(Permissions::MANAGE_PRODUCTS)) {
+                return redirect()->route('admin.products.index');
+            }
+
+            if ($user?->hasPermission(Permissions::MANAGE_SETTINGS)) {
+                return redirect()->route('admin.settings.edit');
             }
 
             abort(403, 'Nessuna sezione disponibile per il tuo account.');
@@ -100,6 +112,20 @@ Route::prefix('admin')
             Route::put('/users/{user}', [UserManagementController::class, 'update'])->name('users.update');
             Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
         });
+
+        Route::middleware('permission:'.Permissions::MANAGE_PRODUCTS)->group(function (): void {
+            Route::get('/products', [AdminProductController::class, 'index'])->name('products.index');
+            Route::get('/products/create', [AdminProductController::class, 'create'])->name('products.create');
+            Route::post('/products', [AdminProductController::class, 'store'])->name('products.store');
+            Route::get('/products/{product}/edit', [AdminProductController::class, 'edit'])->name('products.edit');
+            Route::put('/products/{product}', [AdminProductController::class, 'update'])->name('products.update');
+            Route::delete('/products/{product}', [AdminProductController::class, 'destroy'])->name('products.destroy');
+        });
+
+        Route::middleware('permission:'.Permissions::MANAGE_SETTINGS)->group(function (): void {
+            Route::get('/settings', [SiteSettingsController::class, 'edit'])->name('settings.edit');
+            Route::put('/settings', [SiteSettingsController::class, 'update'])->name('settings.update');
+        });
     });
 
 Route::middleware('guest')->group(function (): void {
@@ -117,6 +143,15 @@ Route::get('/blog', [PublicArticleController::class, 'index'])->name('articles.i
 Route::get('/blog/categoria/{category:slug}', [PublicArticleController::class, 'byCategory'])->name('articles.category');
 Route::get('/blog/{category:slug}/{post:slug}', [PublicArticleController::class, 'showByCategory'])->name('articles.show.category');
 Route::get('/blog/{post:slug}', [PublicArticleController::class, 'show'])->name('articles.show');
+
+Route::get('/prodotti', [PublicProductController::class, 'index'])->name('products.index');
+Route::get('/prodotti/{product:slug}', [PublicProductController::class, 'show'])->name('products.show');
+
+Route::get('/carrello', [CartController::class, 'index'])->name('cart.index');
+Route::post('/carrello/add/{product:id}', [CartController::class, 'add'])->name('cart.add');
+Route::patch('/carrello/{product:id}', [CartController::class, 'update'])->name('cart.update');
+Route::delete('/carrello/{product:id}', [CartController::class, 'remove'])->name('cart.remove');
+Route::delete('/carrello', [CartController::class, 'clear'])->name('cart.clear');
 
 Route::get('/', [PageController::class, 'home'])->name('pages.home');
 Route::get('/{slug}', [PageController::class, 'show'])
