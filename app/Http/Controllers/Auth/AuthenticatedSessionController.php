@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Support\Access\Permissions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -36,6 +38,15 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
+        $user = $request->user();
+        if (! $user || ! $this->isAdminUser($user)) {
+            Auth::guard('web')->logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'Questo login e riservato agli amministratori.',
+            ]);
+        }
+
         $request->session()->regenerate();
 
         return redirect()->intended(route('admin.dashboard'));
@@ -43,11 +54,29 @@ class AuthenticatedSessionController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
+        $user = $request->user();
+        $redirectRoute = ($user && $this->isAdminUser($user))
+            ? 'login'
+            : 'customer.login';
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect()->route($redirectRoute);
+    }
+
+    private function isAdminUser(User $user): bool
+    {
+        if ((int) $user->id === 1) {
+            return true;
+        }
+
+        if ($user->roles()->exists() || $user->permissions()->exists()) {
+            return $user->hasAnyPermission(Permissions::allNames());
+        }
+
+        return false;
     }
 }

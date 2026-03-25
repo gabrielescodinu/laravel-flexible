@@ -57,7 +57,7 @@
 
                 <div class="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-4">
                     <p class="text-lg font-semibold text-slate-900">Totale: @{{ cart.total_formatted }}</p>
-                    <button class="btn btn-primary" type="button" disabled>Checkout (demo)</button>
+                    <a class="btn btn-primary" href="{{ route('checkout.index') }}">Procedi al pagamento</a>
                 </div>
             </template>
         </section>
@@ -102,7 +102,7 @@
 
                 <div class="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-4">
                     <p class="text-lg font-semibold text-slate-900">Totale: € {{ number_format((float) $total, 2, ',', '.') }}</p>
-                    <button class="btn btn-primary" type="button" disabled>Checkout (demo)</button>
+                    <a class="btn btn-primary" href="{{ route('checkout.index') }}">Procedi al pagamento</a>
                 </div>
             @endif
         </section>

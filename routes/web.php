@@ -9,8 +9,11 @@ use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\ArticleController as PublicArticleController;
+use App\Http\Controllers\AccountOrderController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\CustomerAuthController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProductController as PublicProductController;
 use App\Http\Controllers\ProfileController;
@@ -131,12 +134,26 @@ Route::prefix('admin')
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
+
+    Route::get('/account/login', [CustomerAuthController::class, 'showLogin'])->name('customer.login');
+    Route::post('/account/login', [CustomerAuthController::class, 'login'])->name('customer.login.store');
+    Route::get('/account/register', [CustomerAuthController::class, 'showRegister'])->name('customer.register');
+    Route::post('/account/register', [CustomerAuthController::class, 'register'])->name('customer.register.store');
 });
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+});
+
+Route::middleware('customer.auth')->group(function (): void {
+    Route::post('/account/logout', [CustomerAuthController::class, 'logout'])->name('customer.logout');
+    Route::get('/account', fn () => redirect()->route('account.orders.index'))->name('account.home');
+    Route::get('/account/orders', [AccountOrderController::class, 'index'])->name('account.orders.index');
+    Route::get('/account/orders/{order}', [AccountOrderController::class, 'show'])->name('account.orders.show');
+    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 });
 
 Route::get('/blog', [PublicArticleController::class, 'index'])->name('articles.index');

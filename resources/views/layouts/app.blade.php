@@ -56,9 +56,11 @@
         $logoAlt = $menu['logo_alt'] ?? (config('app.name').' logo');
         $ecommerceEnabled = (bool) ($menu['ecommerceEnabled'] ?? false);
         $cartItemCount = (int) ($menu['cartItemCount'] ?? 0);
+        $authenticatedUser = auth()->user();
+        $showAdminToolbar = $authenticatedUser?->hasAnyPermission(\App\Support\Access\Permissions::allNames()) ?? false;
     @endphp
 
-    @auth
+    @if ($showAdminToolbar)
         @php
             $editLink = null;
             $editLabel = null;
@@ -102,7 +104,7 @@
                         data-user-dropdown-toggle
                         aria-expanded="false"
                     >
-                        <span>{{ auth()->user()?->name }}</span>
+                        <span>{{ $authenticatedUser?->name }}</span>
                         <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m6 8 4 4 4-4"></path>
                         </svg>
@@ -125,7 +127,7 @@
                 </div>
             </div>
         </div>
-    @endauth
+    @endif
 
     <header>
         <div class="relative bg-[#050b16]">
@@ -147,6 +149,22 @@
                     ])
 
                     @if ($ecommerceEnabled)
+                        @auth
+                            <a
+                                href="{{ route('account.orders.index') }}"
+                                class="ml-4 inline-flex h-10 items-center rounded-full border border-white/20 px-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                            >
+                                I miei ordini
+                            </a>
+                        @else
+                            <a
+                                href="{{ route('customer.login') }}"
+                                class="ml-4 inline-flex h-10 items-center rounded-full border border-white/20 px-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                            >
+                                Accedi
+                            </a>
+                        @endauth
+
                         <a
                             href="{{ route('cart.index') }}"
                             class="ml-4 inline-flex h-10 items-center gap-2 rounded-full border border-white/20 px-3 text-sm font-semibold text-white transition hover:bg-white/10"
@@ -189,6 +207,16 @@
 
                     <div class="text-white">
                         @if ($ecommerceEnabled)
+                            @auth
+                                <a href="{{ route('account.orders.index') }}" class="mb-4 inline-flex items-center rounded-xl border border-white/20 px-3 py-2 text-sm font-semibold">
+                                    I miei ordini
+                                </a>
+                            @else
+                                <a href="{{ route('customer.login') }}" class="mb-4 inline-flex items-center rounded-xl border border-white/20 px-3 py-2 text-sm font-semibold">
+                                    Accedi
+                                </a>
+                            @endauth
+
                             <a href="{{ route('cart.index') }}" class="mb-4 inline-flex items-center gap-2 rounded-xl border border-white/20 px-3 py-2 text-sm font-semibold">
                                 <span>Carrello</span>
                                 <span data-cart-count-badge class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1 text-[11px]">{{ $cartItemCount }}</span>
@@ -245,6 +273,12 @@
         @if (session('success'))
             <div class="alert alert-success">
                 {{ session('success') }}
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="alert alert-error">
+                {{ session('error') }}
             </div>
         @endif
 

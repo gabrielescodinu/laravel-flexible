@@ -28,5 +28,10 @@
 
             <button type="submit" class="btn btn-primary w-full">Login</button>
         </form>
+
+        <p class="mt-4 text-sm text-slate-600">
+            Sei un cliente?
+            <a href="{{ route('customer.login') }}" class="font-semibold text-slate-900 underline underline-offset-2">Accedi all'area ordini</a>
+        </p>
     </section>
 @endsection
