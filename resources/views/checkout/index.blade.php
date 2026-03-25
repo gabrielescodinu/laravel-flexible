@@ -53,6 +53,77 @@
                 </select>
             </div>
 
+            <div
+                class="{{ $currentPaymentMethod === 'card_demo' ? '' : 'hidden' }} space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4"
+                data-card-fields
+            >
+                <div>
+                    <p class="text-sm font-semibold text-slate-800">Dati carta test</p>
+                    <p class="mt-1 text-xs text-slate-500">
+                        Carte approvate: `4242 4242 4242 4242`, `5555 5555 5555 4444`, `3782 822463 10005`.
+                        Carta rifiutata: `4000 0000 0000 0002`.
+                    </p>
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div class="field md:col-span-2">
+                        <label class="field-label" for="card_number">Numero carta</label>
+                        <input
+                            class="field-input"
+                            id="card_number"
+                            name="card_number"
+                            type="text"
+                            inputmode="numeric"
+                            autocomplete="cc-number"
+                            value="{{ old('card_number') }}"
+                            placeholder="4242 4242 4242 4242"
+                        >
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="card_expiry_month">Mese scadenza</label>
+                        <input
+                            class="field-input"
+                            id="card_expiry_month"
+                            name="card_expiry_month"
+                            type="number"
+                            min="1"
+                            max="12"
+                            value="{{ old('card_expiry_month') }}"
+                            placeholder="12"
+                        >
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="card_expiry_year">Anno scadenza</label>
+                        <input
+                            class="field-input"
+                            id="card_expiry_year"
+                            name="card_expiry_year"
+                            type="number"
+                            min="{{ now()->format('Y') }}"
+                            max="{{ now()->addYears(20)->format('Y') }}"
+                            value="{{ old('card_expiry_year') }}"
+                            placeholder="{{ now()->addYears(2)->format('Y') }}"
+                        >
+                    </div>
+                </div>
+
+                <div class="field max-w-40">
+                    <label class="field-label" for="card_cvc">CVC</label>
+                    <input
+                        class="field-input"
+                        id="card_cvc"
+                        name="card_cvc"
+                        type="text"
+                        inputmode="numeric"
+                        autocomplete="cc-csc"
+                        value="{{ old('card_cvc') }}"
+                        placeholder="123"
+                    >
+                </div>
+            </div>
+
             <div class="field">
                 <label class="field-label" for="notes">Note ordine (opzionale)</label>
                 <textarea class="field-input min-h-24" id="notes" name="notes" placeholder="Note per il tuo ordine...">{{ old('notes') }}</textarea>
@@ -87,5 +158,23 @@
             </div>
         </aside>
     </div>
-@endsection
 
+    <script>
+        (() => {
+            const paymentMethod = document.getElementById('payment_method');
+            const cardFields = document.querySelector('[data-card-fields]');
+
+            if (!paymentMethod || !cardFields) {
+                return;
+            }
+
+            const syncCardFieldsVisibility = () => {
+                const showCardFields = paymentMethod.value === 'card_demo';
+                cardFields.classList.toggle('hidden', !showCardFields);
+            };
+
+            paymentMethod.addEventListener('change', syncCardFieldsVisibility);
+            syncCardFieldsVisibility();
+        })();
+    </script>
+@endsection

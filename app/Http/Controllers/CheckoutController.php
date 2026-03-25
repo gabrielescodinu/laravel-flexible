@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class CheckoutController extends Controller
 {
@@ -52,6 +53,10 @@ class CheckoutController extends Controller
             'customer_email' => ['required', 'email', 'max:255'],
             'payment_method' => ['required', 'in:card_demo,bank_transfer'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'card_number' => ['nullable', 'string', 'required_if:payment_method,card_demo'],
+            'card_expiry_month' => ['nullable', 'integer', 'required_if:payment_method,card_demo', 'min:1', 'max:12'],
+            'card_expiry_year' => ['nullable', 'integer', 'required_if:payment_method,card_demo', 'min:2024', 'max:2100'],
+            'card_cvc' => ['nullable', 'string', 'required_if:payment_method,card_demo', 'min:3', 'max:4'],
         ]);
 
         $user = $request->user();
@@ -59,12 +64,17 @@ class CheckoutController extends Controller
 
         $paymentMethod = (string) $validated['payment_method'];
         $isImmediatePayment = $paymentMethod === 'card_demo';
+        $cardDetails = null;
+
+        if ($isImmediatePayment) {
+            $cardDetails = $this->validateDemoCard($validated);
+        }
 
         $orderStatus = $isImmediatePayment ? Order::STATUS_COMPLETED : Order::STATUS_PENDING;
         $paymentStatus = $isImmediatePayment ? Order::PAYMENT_PAID : Order::PAYMENT_PENDING;
         $paidAt = $isImmediatePayment ? now() : null;
 
-        $order = DB::transaction(function () use ($snapshot, $validated, $user, $orderStatus, $paymentStatus, $paymentMethod, $paidAt, $request, $isImmediatePayment): Order {
+        $order = DB::transaction(function () use ($snapshot, $validated, $user, $orderStatus, $paymentStatus, $paymentMethod, $paidAt, $request, $isImmediatePayment, $cardDetails): Order {
             $order = Order::query()->create([
                 'user_id' => $user->id,
                 'number' => 'TMP-'.Str::uuid()->toString(),
@@ -111,6 +121,7 @@ class CheckoutController extends Controller
                 'currency' => 'EUR',
                 'payload' => [
                     'payment_method' => $paymentMethod,
+                    'card' => $cardDetails,
                     'ip' => $request->ip(),
                     'user_agent' => $request->userAgent(),
                 ],
@@ -139,5 +150,85 @@ class CheckoutController extends Controller
     private function generateOrderNumber(Order $order): string
     {
         return 'ORD-'.now()->format('Ymd').'-'.str_pad((string) $order->id, 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array{brand: string, last4: string, exp_month: int, exp_year: int}
+     * @throws ValidationException
+     */
+    private function validateDemoCard(array $validated): array
+    {
+        $cardNumber = preg_replace('/\D+/', '', (string) ($validated['card_number'] ?? ''));
+        $expMonth = (int) ($validated['card_expiry_month'] ?? 0);
+        $expYear = (int) ($validated['card_expiry_year'] ?? 0);
+        $cvc = preg_replace('/\D+/', '', (string) ($validated['card_cvc'] ?? ''));
+
+        if ($cardNumber === '' || strlen($cardNumber) < 13 || strlen($cardNumber) > 19) {
+            throw ValidationException::withMessages([
+                'card_number' => 'Numero carta non valido.',
+            ]);
+        }
+
+        if ($cvc === '' || strlen($cvc) < 3 || strlen($cvc) > 4) {
+            throw ValidationException::withMessages([
+                'card_cvc' => 'CVC non valido.',
+            ]);
+        }
+
+        $currentYear = (int) now()->format('Y');
+        $currentMonth = (int) now()->format('n');
+        if ($expYear < $currentYear || ($expYear === $currentYear && $expMonth < $currentMonth)) {
+            throw ValidationException::withMessages([
+                'card_expiry_year' => 'Carta scaduta.',
+            ]);
+        }
+
+        $acceptedTestCards = [
+            '4242424242424242', // Visa test success
+            '5555555555554444', // Mastercard test success
+            '378282246310005',  // Amex test success
+        ];
+
+        $declinedTestCards = [
+            '4000000000000002', // Generic decline
+            '4000000000009995', // Insufficient funds
+        ];
+
+        if (in_array($cardNumber, $declinedTestCards, true)) {
+            throw ValidationException::withMessages([
+                'card_number' => 'Pagamento rifiutato (carta test simulata).',
+            ]);
+        }
+
+        if (! in_array($cardNumber, $acceptedTestCards, true)) {
+            throw ValidationException::withMessages([
+                'card_number' => 'Carta test non riconosciuta. Usa uno dei numeri test suggeriti.',
+            ]);
+        }
+
+        return [
+            'brand' => $this->detectCardBrand($cardNumber),
+            'last4' => substr($cardNumber, -4),
+            'exp_month' => $expMonth,
+            'exp_year' => $expYear,
+        ];
+    }
+
+    private function detectCardBrand(string $cardNumber): string
+    {
+        if (str_starts_with($cardNumber, '4')) {
+            return 'visa';
+        }
+
+        if (preg_match('/^(5[1-5])/', $cardNumber) === 1) {
+            return 'mastercard';
+        }
+
+        if (preg_match('/^(34|37)/', $cardNumber) === 1) {
+            return 'amex';
+        }
+
+        return 'card';
     }
 }
