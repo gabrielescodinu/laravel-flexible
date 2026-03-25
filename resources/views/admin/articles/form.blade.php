@@ -11,6 +11,7 @@
                 <p class="muted mt-2">Titolo, contenuto, immagine e categorie in stile WordPress.</p>
             </div>
             <div class="flex flex-wrap gap-2">
+                <button type="button" class="btn btn-secondary" data-open-seo-modal>SEO</button>
                 <a class="btn btn-secondary" href="{{ route('admin.categories.index') }}">Gestisci categorie</a>
                 <a class="btn btn-secondary" href="{{ route('admin.articles.index') }}">Torna alla lista</a>
             </div>
@@ -67,49 +68,74 @@
                 <label class="field-label" for="content">Contenuto</label>
                 <textarea class="field-input min-h-64" id="content" name="content" placeholder="Scrivi qui il contenuto completo...">{{ old('content', $post->content) }}</textarea>
             </div>
-        </section>
 
-        <section class="panel space-y-4">
-            <div>
-                <h2 class="text-lg font-semibold text-slate-900">SEO</h2>
-                <p class="muted mt-1 text-sm">Campi opzionali per ottimizzare snippet e indicizzazione.</p>
-            </div>
-
-            <div class="grid gap-4 md:grid-cols-2">
-                <div class="field">
-                    <label class="field-label" for="seo_title">SEO title</label>
-                    <input class="field-input" id="seo_title" name="seo_title" type="text" maxlength="255" value="{{ old('seo_title', $post->seo_title) }}" placeholder="Titolo SEO personalizzato">
+            <div class="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div>
+                    <h2 class="text-base font-semibold text-slate-900">SEO</h2>
+                    <p class="muted mt-1 text-sm">Apri la modale per configurare title, description e robots.</p>
                 </div>
-
-                <div class="field">
-                    <label class="field-label" for="seo_robots">Robots</label>
-                    @php($currentSeoRobots = old('seo_robots', $post->seo_robots ?: 'index,follow'))
-                    <select class="field-input" id="seo_robots" name="seo_robots">
-                        <option value="index,follow" @selected($currentSeoRobots === 'index,follow')>index,follow</option>
-                        <option value="index,nofollow" @selected($currentSeoRobots === 'index,nofollow')>index,nofollow</option>
-                        <option value="noindex,follow" @selected($currentSeoRobots === 'noindex,follow')>noindex,follow</option>
-                        <option value="noindex,nofollow" @selected($currentSeoRobots === 'noindex,nofollow')>noindex,nofollow</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="field">
-                <label class="field-label" for="seo_description">Meta description</label>
-                <textarea class="field-input min-h-24" id="seo_description" name="seo_description" maxlength="500" placeholder="Breve descrizione (consigliato 140-160 caratteri)">{{ old('seo_description', $post->seo_description) }}</textarea>
-            </div>
-
-            <div class="grid gap-4 md:grid-cols-2">
-                <div class="field">
-                    <label class="field-label" for="seo_keywords">Meta keywords</label>
-                    <input class="field-input" id="seo_keywords" name="seo_keywords" type="text" maxlength="500" value="{{ old('seo_keywords', $post->seo_keywords) }}" placeholder="es. notizie, sviluppo, laravel">
-                </div>
-
-                <div class="field">
-                    <label class="field-label" for="seo_canonical_url">Canonical URL</label>
-                    <input class="field-input" id="seo_canonical_url" name="seo_canonical_url" type="text" maxlength="2048" value="{{ old('seo_canonical_url', $post->seo_canonical_url) }}" placeholder="https://example.com/blog/categoria/articolo">
-                </div>
+                <button type="button" class="btn btn-secondary" data-open-seo-modal>Apri SEO</button>
             </div>
         </section>
+
+        <div
+            class="fixed inset-0 z-[85] hidden items-center justify-center bg-black/45 p-4"
+            data-seo-modal
+            aria-hidden="true"
+        >
+            <div class="w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">SEO</h2>
+                        <p class="muted mt-1 text-xs">Campi opzionali per snippet e indicizzazione.</p>
+                    </div>
+                    <button type="button" class="btn btn-secondary" data-close-seo-modal>Chiudi</button>
+                </div>
+
+                <div class="max-h-[70vh] overflow-y-auto p-4 space-y-4">
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div class="field">
+                            <label class="field-label" for="seo_title">SEO title</label>
+                            <input class="field-input" id="seo_title" name="seo_title" type="text" maxlength="255" value="{{ old('seo_title', $post->seo_title) }}" placeholder="Titolo SEO personalizzato">
+                        </div>
+
+                        <div class="field">
+                            <label class="field-label" for="seo_robots">Robots</label>
+                            @php($currentSeoRobots = old('seo_robots', $post->seo_robots ?: 'index,follow'))
+                            <select class="field-input" id="seo_robots" name="seo_robots">
+                                <option value="index,follow" @selected($currentSeoRobots === 'index,follow')>index,follow</option>
+                                <option value="index,nofollow" @selected($currentSeoRobots === 'index,nofollow')>index,nofollow</option>
+                                <option value="noindex,follow" @selected($currentSeoRobots === 'noindex,follow')>noindex,follow</option>
+                                <option value="noindex,nofollow" @selected($currentSeoRobots === 'noindex,nofollow')>noindex,nofollow</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="seo_description">Meta description</label>
+                        <textarea class="field-input min-h-24" id="seo_description" name="seo_description" maxlength="500" placeholder="Breve descrizione (consigliato 140-160 caratteri)">{{ old('seo_description', $post->seo_description) }}</textarea>
+                    </div>
+
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div class="field">
+                            <label class="field-label" for="seo_keywords">Meta keywords</label>
+                            <input class="field-input" id="seo_keywords" name="seo_keywords" type="text" maxlength="500" value="{{ old('seo_keywords', $post->seo_keywords) }}" placeholder="es. notizie, sviluppo, laravel">
+                        </div>
+
+                        <div class="field">
+                            <label class="field-label" for="seo_canonical_url">Canonical URL</label>
+                            <input class="field-input" id="seo_canonical_url" name="seo_canonical_url" type="text" maxlength="2048" value="{{ old('seo_canonical_url', $post->seo_canonical_url) }}" placeholder="https://example.com/blog/categoria/articolo">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-200 px-4 py-3">
+                    <div class="flex justify-end">
+                        <button type="button" class="btn btn-secondary" data-close-seo-modal>Chiudi</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <section class="panel space-y-4">
             <h2 class="text-lg font-semibold text-slate-900">Media e categorie</h2>
@@ -173,6 +199,50 @@
             @endif
         </div>
     </form>
+
+    <script>
+        (() => {
+            const seoModal = document.querySelector('[data-seo-modal]');
+            const openSeoButtons = [...document.querySelectorAll('[data-open-seo-modal]')];
+            const closeSeoButtons = [...document.querySelectorAll('[data-close-seo-modal]')];
+
+            if (!seoModal || openSeoButtons.length === 0) {
+                return;
+            }
+
+            const openSeoModal = () => {
+                seoModal.classList.remove('hidden');
+                seoModal.classList.add('flex');
+                seoModal.setAttribute('aria-hidden', 'false');
+            };
+
+            const closeSeoModal = () => {
+                seoModal.classList.add('hidden');
+                seoModal.classList.remove('flex');
+                seoModal.setAttribute('aria-hidden', 'true');
+            };
+
+            openSeoButtons.forEach((button) => {
+                button.addEventListener('click', openSeoModal);
+            });
+
+            closeSeoButtons.forEach((button) => {
+                button.addEventListener('click', closeSeoModal);
+            });
+
+            seoModal.addEventListener('click', (event) => {
+                if (event.target === seoModal) {
+                    closeSeoModal();
+                }
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && seoModal.getAttribute('aria-hidden') === 'false') {
+                    closeSeoModal();
+                }
+            });
+        })();
+    </script>
 
     <script>
         (() => {

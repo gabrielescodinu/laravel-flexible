@@ -48,6 +48,9 @@
                 <p class="muted mt-2">Configura i campi base e componi il layout con blocchi flessibili.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
+                <button type="button" class="btn btn-secondary" data-open-seo-modal>
+                    SEO
+                </button>
                 @if ($page->exists)
                     <button type="button" class="btn btn-secondary" data-open-revisions>
                         Revisioni ({{ $revisions->count() }})
@@ -156,48 +159,73 @@
                 </select>
             </div>
 
-            <div class="space-y-4 border-t border-slate-200 pt-4">
+            <div class="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div>
-                    <h2 class="text-lg font-semibold text-slate-900">SEO</h2>
-                    <p class="muted mt-1 text-sm">Campi opzionali per motori di ricerca e social preview.</p>
+                    <h2 class="text-base font-semibold text-slate-900">SEO</h2>
+                    <p class="muted mt-1 text-sm">Apri la modale per configurare title, description e robots.</p>
+                </div>
+                <button type="button" class="btn btn-secondary" data-open-seo-modal>Apri SEO</button>
+            </div>
+        </section>
+
+        <div
+            class="fixed inset-0 z-[85] hidden items-center justify-center bg-black/45 p-4"
+            data-seo-modal
+            aria-hidden="true"
+        >
+            <div class="w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">SEO</h2>
+                        <p class="muted mt-1 text-xs">Campi opzionali per snippet e indicizzazione.</p>
+                    </div>
+                    <button type="button" class="btn btn-secondary" data-close-seo-modal>Chiudi</button>
                 </div>
 
-                <div class="grid gap-4 md:grid-cols-2">
-                    <div class="field">
-                        <label class="field-label" for="seo_title">SEO title</label>
-                        <input class="field-input" id="seo_title" name="seo_title" type="text" maxlength="255" value="{{ old('seo_title', $page->seo_title) }}" placeholder="Titolo SEO personalizzato">
+                <div class="max-h-[70vh] overflow-y-auto p-4 space-y-4">
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div class="field">
+                            <label class="field-label" for="seo_title">SEO title</label>
+                            <input class="field-input" id="seo_title" name="seo_title" type="text" maxlength="255" value="{{ old('seo_title', $page->seo_title) }}" placeholder="Titolo SEO personalizzato">
+                        </div>
+
+                        <div class="field">
+                            <label class="field-label" for="seo_robots">Robots</label>
+                            @php($currentSeoRobots = old('seo_robots', $page->seo_robots ?: 'index,follow'))
+                            <select class="field-input" id="seo_robots" name="seo_robots">
+                                <option value="index,follow" @selected($currentSeoRobots === 'index,follow')>index,follow</option>
+                                <option value="index,nofollow" @selected($currentSeoRobots === 'index,nofollow')>index,nofollow</option>
+                                <option value="noindex,follow" @selected($currentSeoRobots === 'noindex,follow')>noindex,follow</option>
+                                <option value="noindex,nofollow" @selected($currentSeoRobots === 'noindex,nofollow')>noindex,nofollow</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="field">
-                        <label class="field-label" for="seo_robots">Robots</label>
-                        @php($currentSeoRobots = old('seo_robots', $page->seo_robots ?: 'index,follow'))
-                        <select class="field-input" id="seo_robots" name="seo_robots">
-                            <option value="index,follow" @selected($currentSeoRobots === 'index,follow')>index,follow</option>
-                            <option value="index,nofollow" @selected($currentSeoRobots === 'index,nofollow')>index,nofollow</option>
-                            <option value="noindex,follow" @selected($currentSeoRobots === 'noindex,follow')>noindex,follow</option>
-                            <option value="noindex,nofollow" @selected($currentSeoRobots === 'noindex,nofollow')>noindex,nofollow</option>
-                        </select>
+                        <label class="field-label" for="seo_description">Meta description</label>
+                        <textarea class="field-input min-h-24" id="seo_description" name="seo_description" maxlength="500" placeholder="Breve descrizione (consigliato 140-160 caratteri)">{{ old('seo_description', $page->seo_description) }}</textarea>
+                    </div>
+
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div class="field">
+                            <label class="field-label" for="seo_keywords">Meta keywords</label>
+                            <input class="field-input" id="seo_keywords" name="seo_keywords" type="text" maxlength="500" value="{{ old('seo_keywords', $page->seo_keywords) }}" placeholder="es. cms, laravel, builder">
+                        </div>
+
+                        <div class="field">
+                            <label class="field-label" for="seo_canonical_url">Canonical URL</label>
+                            <input class="field-input" id="seo_canonical_url" name="seo_canonical_url" type="text" maxlength="2048" value="{{ old('seo_canonical_url', $page->seo_canonical_url) }}" placeholder="https://example.com/percorso">
+                        </div>
                     </div>
                 </div>
 
-                <div class="field">
-                    <label class="field-label" for="seo_description">Meta description</label>
-                    <textarea class="field-input min-h-24" id="seo_description" name="seo_description" maxlength="500" placeholder="Breve descrizione (consigliato 140-160 caratteri)">{{ old('seo_description', $page->seo_description) }}</textarea>
-                </div>
-
-                <div class="grid gap-4 md:grid-cols-2">
-                    <div class="field">
-                        <label class="field-label" for="seo_keywords">Meta keywords</label>
-                        <input class="field-input" id="seo_keywords" name="seo_keywords" type="text" maxlength="500" value="{{ old('seo_keywords', $page->seo_keywords) }}" placeholder="es. cms, laravel, builder">
-                    </div>
-
-                    <div class="field">
-                        <label class="field-label" for="seo_canonical_url">Canonical URL</label>
-                        <input class="field-input" id="seo_canonical_url" name="seo_canonical_url" type="text" maxlength="2048" value="{{ old('seo_canonical_url', $page->seo_canonical_url) }}" placeholder="https://example.com/percorso">
+                <div class="border-t border-slate-200 px-4 py-3">
+                    <div class="flex justify-end">
+                        <button type="button" class="btn btn-secondary" data-close-seo-modal>Chiudi</button>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
 
         <section class="panel space-y-4">
             <div class="flex flex-wrap items-end justify-between gap-4">
@@ -234,39 +262,65 @@
             const revisionsModal = document.querySelector('[data-revisions-modal]');
             const openRevisionsButton = document.querySelector('[data-open-revisions]');
             const closeRevisionsButtons = [...document.querySelectorAll('[data-close-revisions]')];
+            const seoModal = document.querySelector('[data-seo-modal]');
+            const openSeoButtons = [...document.querySelectorAll('[data-open-seo-modal]')];
+            const closeSeoButtons = [...document.querySelectorAll('[data-close-seo-modal]')];
+
+            const openModal = (modal) => {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                modal.setAttribute('aria-hidden', 'false');
+            };
+
+            const closeModal = (modal) => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                modal.setAttribute('aria-hidden', 'true');
+            };
 
             if (revisionsModal && openRevisionsButton) {
-                const openRevisionsModal = () => {
-                    revisionsModal.classList.remove('hidden');
-                    revisionsModal.classList.add('flex');
-                    revisionsModal.setAttribute('aria-hidden', 'false');
-                };
-
-                const closeRevisionsModal = () => {
-                    revisionsModal.classList.add('hidden');
-                    revisionsModal.classList.remove('flex');
-                    revisionsModal.setAttribute('aria-hidden', 'true');
-                };
-
-                const onRevisionsEscape = (event) => {
-                    if (event.key === 'Escape' && revisionsModal.getAttribute('aria-hidden') === 'false') {
-                        closeRevisionsModal();
-                    }
-                };
-
-                openRevisionsButton.addEventListener('click', openRevisionsModal);
+                openRevisionsButton.addEventListener('click', () => openModal(revisionsModal));
                 closeRevisionsButtons.forEach((button) => {
-                    button.addEventListener('click', closeRevisionsModal);
+                    button.addEventListener('click', () => closeModal(revisionsModal));
                 });
 
                 revisionsModal.addEventListener('click', (event) => {
                     if (event.target === revisionsModal) {
-                        closeRevisionsModal();
+                        closeModal(revisionsModal);
                     }
                 });
-
-                document.addEventListener('keydown', onRevisionsEscape);
             }
+
+            if (seoModal && openSeoButtons.length > 0) {
+                openSeoButtons.forEach((button) => {
+                    button.addEventListener('click', () => openModal(seoModal));
+                });
+
+                closeSeoButtons.forEach((button) => {
+                    button.addEventListener('click', () => closeModal(seoModal));
+                });
+
+                seoModal.addEventListener('click', (event) => {
+                    if (event.target === seoModal) {
+                        closeModal(seoModal);
+                    }
+                });
+            }
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key !== 'Escape') {
+                    return;
+                }
+
+                if (seoModal && seoModal.getAttribute('aria-hidden') === 'false') {
+                    closeModal(seoModal);
+                    return;
+                }
+
+                if (revisionsModal && revisionsModal.getAttribute('aria-hidden') === 'false') {
+                    closeModal(revisionsModal);
+                }
+            });
         })();
     </script>
 
